@@ -13,7 +13,7 @@ class PublicProfileSerializer(serializers.ModelSerializer):
 
 class PublicUserSerializer(serializers.ModelSerializer):
     profile = PublicProfileSerializer(source='users.profile')
-    
+
     class Meta:
         model = User
         fields = ['username', 'profile']

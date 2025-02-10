@@ -1,6 +1,7 @@
 # 🔔 Notifications Service
 
-A real-time notification system integrated with the Users service, providing WebSocket-based notifications for profile updates and system events.
+A real-time notification system integrated with the Users service, providing WebSocket-based notifications for profile
+updates and system events.
 
 ## ✨ Features
 
@@ -29,7 +30,7 @@ The notification system is tightly integrated with the Users service to provide 
 The service behavior can be configured through environment variables:
 
 | Variable           | Description                | Default |
-| ------------------ | -------------------------- | ------- |
+|--------------------|----------------------------|---------|
 | `API_REQUIRE_AUTH` | Control API authentication | `True`  |
 | `REDIS_HOST`       | Redis host for WebSocket   | `redis` |
 
@@ -141,7 +142,7 @@ Available types in `constants.py`:
 ### Notification Model
 
 | Field               | Type          | Description                      |
-| ------------------- | ------------- | -------------------------------- |
+|---------------------|---------------|----------------------------------|
 | `recipient`         | ForeignKey    | User receiving the notification  |
 | `actor`             | ForeignKey    | User triggering the notification |
 | `notification_type` | CharField     | Type of notification             |

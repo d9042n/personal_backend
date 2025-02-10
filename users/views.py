@@ -4,13 +4,12 @@ from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, permissions, viewsets
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from rest_framework.views import APIView
 
 from .serializers import UserSerializer, PublicUserSerializer
-from .services import UserService
 
 
 # Create your views here.
@@ -18,11 +17,12 @@ from .services import UserService
 class BaseAuthenticatedView:
     """Base class for handling API_REQUIRE_AUTH setting"""
     throttle_classes = [UserRateThrottle]  # Add rate limiting
-    
+
     def get_permissions(self):
         if not settings.API_REQUIRE_AUTH:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
+
 
 class UserListCreateView(APIView):
     """
@@ -491,7 +491,7 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
     def get_object(self):
         username = self.kwargs['username']
         user = get_object_or_404(User, username=username)
-        
+
         # For update/delete operations, check user permissions
         if self.action in ['partial_update', 'destroy']:
             if user != self.request.user and not self.request.user.is_staff:
