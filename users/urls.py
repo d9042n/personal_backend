@@ -1,9 +1,17 @@
 from django.urls import path
-
-from .views import UserListCreateView, UserDetailView, ProfileView
+from .views import UserViewSet, PublicUserView
 
 urlpatterns = [
-    path('users/', UserListCreateView.as_view(), name='user-list-create'),
-    path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
-    path('profile/', ProfileView.as_view(), name='profile'),
+    # Public endpoints
+    path('public/profile/<str:username>/', PublicUserView.as_view(), name='public-profile'),
+    
+    # User management endpoints
+    path('users/', UserViewSet.as_view({
+        'post': 'create'
+    }), name='user-register'),
+    path('users/<str:username>/', UserViewSet.as_view({
+        'get': 'retrieve',
+        'patch': 'partial_update',
+        'delete': 'destroy'
+    }), name='user-detail'),
 ]

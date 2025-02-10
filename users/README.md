@@ -1,95 +1,182 @@
-# 👥 Users Service
+# 🌟 User Profile API
 
-A comprehensive user management system with extended profile capabilities and real-time notifications integration.
+A clean, RESTful API for user profile management with a focus on simplicity and security.
 
-## ✨ Features
+## 🎯 Core Features
 
-- 👤 Extended user profiles
+- 🔓 Public profile viewing & registration
+- 👤 User management
+- ✏️ Profile customization
+- 🔒 Secure authentication
 - 🔗 Social media integration
-- 🎯 Custom badge system
-- 🔐 Secure authentication
-- 📝 Complete CRUD operations
-- 🔌 REST API endpoints
-- 📊 Admin interface
-- ✅ Comprehensive testing
-- 🔄 Real-time notifications
+- 📱 Real-time updates
 
-## 🔌 API Endpoints
+## 📚 API Documentation
 
-### Create User
+### Public Endpoints (No Authentication Required)
+
+#### View Public Profile
+
+```http
+GET /api/public/profile/{username}/
+```
+
+Returns public profile information for any user.
+
+**Response** `200 OK`
+
+```json
+{
+  "username": "johndoe",
+  "profile": {
+    "name": "John Doe",
+    "title": "Software Developer",
+    "badge": "Available",
+    "description": "Full-stack developer",
+    "github": "https://github.com/johndoe"
+  }
+}
+```
+
+#### Register New Account
 
 ```http
 POST /api/users/
 
 {
-    "username": "user123",
+    "username": "newuser",
     "email": "user@example.com",
-    "password": "SecurePass123!",
+    "password": "secure_password",
     "users": {
         "profile": {
-            "name": "Example User",
-            "title": "Software Developer",
-            "badge": "Available for hire",
-            "github": "https://github.com/username"
+            "name": "New User",
+            "title": "Developer"
         }
     }
 }
 ```
 
-### Get Profile
+### Protected Endpoints (Authentication Required\*)
+
+\*Note: Authentication requirement controlled by API_REQUIRE_AUTH setting
+
+#### View Full Profile
 
 ```http
-GET /api/profile/
+GET /api/users/{username}/
 ```
 
-### Update Profile
+Returns complete user information including private fields.
+
+#### Update Profile
 
 ```http
-PUT /api/profile/
+PATCH /api/users/{username}/
+
 {
     "users": {
         "profile": {
             "title": "Senior Developer",
-            "badge": "Currently busy"
+            "badge": "Available"
         }
     }
 }
 ```
 
-## 🧪 Testing
+#### Delete Account
 
-Run the test suite:
+```http
+DELETE /api/users/{username}/
+```
+
+## 🔒 Security Features
+
+- Public access limited to:
+  - Viewing public profiles (/public/profile/{username}/)
+  - User registration (/users/ POST)
+- Protected operations require:
+  - Authentication (when API_REQUIRE_AUTH is True)
+  - Authorization (can only modify own profile)
+- Rate limiting:
+  - Public endpoints: 100 requests/day
+  - Authenticated users: 1000 requests/day
+- Password security:
+  - Minimum length: 10 characters
+  - Complexity requirements enforced
+  - Hashing using Django's default hasher
+- Email verification required
+- CORS protection enabled
+- XSS protection
+- Content type sniffing protection
+- SSL/HTTPS enforcement in production
+
+## 🚀 Best Practices
+
+1. **RESTful Design**
+
+   - Clear public/protected endpoint separation
+   - Consistent URL structure (/public/profile/, /users/)
+   - Proper HTTP methods (GET, POST, PATCH, DELETE)
+   - Meaningful status codes
+
+2. **Security First**
+
+   - Secure by default
+   - Rate limiting
+   - Input validation
+   - Clear authentication rules
+
+3. **Clean Architecture**
+   - Separation of concerns
+   - Modular design
+   - Clear documentation
+   - Consistent error handling
+
+## 💻 Development Guide
+
+1. **Setup Environment**
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+python manage.py migrate
+
+# Create admin user
+python manage.py createsuperuser
+```
+
+2. **Run Tests**
 
 ```bash
 python manage.py test users
 ```
 
-## 📚 Models
+## 🔌 Integration Features
 
-### Users Model
+- WebSocket notifications for profile updates
+- Social media URL validation
+- Real-time event handling
+- Extensible profile data
 
-- OneToOne relationship with Django's User model
-- Timestamps for creation and updates
-- Base for extended user functionality
+## 📝 API Design Notes
 
-### Profile Model
+- Clear separation between public and protected endpoints
+- Consistent response formats
+- Comprehensive error handling
+- Rate limiting for security
+- Cached public endpoints
+- Supports partial updates
 
-- Social media links
-- Professional information
-- Custom badge system
-- Validated URLs
+## 🤝 Related Services
 
-## 🔧 Development
+- Integrates with Notification system
+- Supports WebSocket connections
+- Extensible for additional features
 
-1. Install dependencies
-2. Run migrations
-3. Create superuser
-4. Start development server
+---
 
-## 🤝 Integration
-
-- Seamless integration with Notifications service
-- Real-time profile updates
-- Extensible architecture
+📖 For detailed API documentation, visit `/swagger/` or `/redoc/`
 
 Made with ❤️ for the Personal Website Project
