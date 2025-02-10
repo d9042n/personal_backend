@@ -73,14 +73,14 @@ class UserListCreateView(APIView):
         Creates a new user account with profile information.
         
         Required fields:
-        * username
-        * email
-        * password
+        * username: Unique identifier for the user
+        * email: Valid email address
+        * password: Secure password meeting requirements
         
         Optional fields:
-        * first_name
-        * last_name
-        * profile information (badge, name, title, etc.)
+        * first_name: User's first name
+        * last_name: User's last name
+        * profile information: Professional and social details
         
         Notes:
         * Password must meet minimum security requirements
@@ -91,24 +91,66 @@ class UserListCreateView(APIView):
             type=openapi.TYPE_OBJECT,
             required=['username', 'email', 'password'],
             properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING, description="Unique username"),
-                'email': openapi.Schema(type=openapi.TYPE_STRING, format="email"),
-                'password': openapi.Schema(type=openapi.TYPE_STRING, format="password"),
-                'first_name': openapi.Schema(type=openapi.TYPE_STRING),
-                'last_name': openapi.Schema(type=openapi.TYPE_STRING),
+                'username': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Unique username",
+                    example="user123"
+                ),
+                'email': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format="email",
+                    example="user@example.com"
+                ),
+                'password': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format="password",
+                    example="SecurePass123!"
+                ),
+                'first_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="John"
+                ),
+                'last_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="Doe"
+                ),
                 'users': openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
                         'profile': openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
-                                'badge': openapi.Schema(type=openapi.TYPE_STRING),
-                                'name': openapi.Schema(type=openapi.TYPE_STRING),
-                                'title': openapi.Schema(type=openapi.TYPE_STRING),
-                                'description': openapi.Schema(type=openapi.TYPE_STRING),
-                                'github': openapi.Schema(type=openapi.TYPE_STRING, format="uri"),
-                                'linkedin': openapi.Schema(type=openapi.TYPE_STRING, format="uri"),
-                                'twitter': openapi.Schema(type=openapi.TYPE_STRING, format="uri"),
+                                'badge': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="Available for hire"
+                                ),
+                                'name': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="John Doe"
+                                ),
+                                'title': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="Software Developer"
+                                ),
+                                'description': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="Experienced software developer with expertise in web technologies."
+                                ),
+                                'github': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format="uri",
+                                    example="https://github.com/username"
+                                ),
+                                'linkedin': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format="uri",
+                                    example="https://linkedin.com/in/username"
+                                ),
+                                'twitter': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format="uri",
+                                    example="https://twitter.com/username"
+                                ),
                             }
                         )
                     }
@@ -118,19 +160,33 @@ class UserListCreateView(APIView):
         responses={
             201: openapi.Response(
                 description="User created successfully",
-                schema=UserSerializer
+                examples={
+                    "application/json": {
+                        "id": 1,
+                        "username": "user123",
+                        "email": "user@example.com",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "users": {
+                            "profile": {
+                                "badge": "Available for hire",
+                                "name": "John Doe",
+                                "title": "Software Developer"
+                            }
+                        }
+                    }
+                }
             ),
             400: openapi.Response(
                 description="Invalid input",
                 examples={
                     "application/json": {
-                        "username": ["This field is required"],
+                        "username": ["This username is already taken"],
                         "email": ["Enter a valid email address"],
-                        "password": ["This password is too common"]
+                        "password": ["Password must be at least 8 characters long"]
                     }
                 }
-            ),
-            409: "Username or email already exists"
+            )
         },
         tags=['Users']
     )

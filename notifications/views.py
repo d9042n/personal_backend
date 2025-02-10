@@ -37,37 +37,56 @@ class NotificationListView(BaseNotificationView):
     @swagger_auto_schema(
         operation_summary="List notifications",
         operation_description="""
-        Get all notifications for the current user.
+        Retrieves all notifications for the current user.
         
-        Returns a list of notifications ordered by creation date (newest first).
-        Each notification includes:
-        * Notification ID
-        * Recipient information
-        * Actor information (if any)
-        * Type of notification
-        * Message
-        * Additional data
-        * Read status
-        * Creation timestamp
+        Returns:
+        * List of notifications ordered by creation date (newest first)
+        * Each notification includes type, message, and metadata
+        * Read/unread status for each notification
         
-        Notes:
-        * Soft-deleted notifications are not included
-        * Authentication may be required based on API_REQUIRE_AUTH setting
+        Filters:
+        * Excludes soft-deleted notifications
+        * Can filter by notification type
+        * Can filter by read status
         """,
+        manual_parameters=[
+            openapi.Parameter(
+                'type',
+                openapi.IN_QUERY,
+                description="Filter by notification type",
+                type=openapi.TYPE_STRING,
+                enum=['profile_update', 'mention', 'system'],
+                required=False
+            ),
+            openapi.Parameter(
+                'is_read',
+                openapi.IN_QUERY,
+                description="Filter by read status",
+                type=openapi.TYPE_BOOLEAN,
+                required=False
+            )
+        ],
         responses={
             200: openapi.Response(
                 description="List of notifications",
-                schema=NotificationSerializer(many=True),
                 examples={
                     "application/json": [{
                         "id": 1,
-                        "recipient": {"id": 1, "username": "testuser"},
-                        "actor": {"id": 2, "username": "admin"},
+                        "recipient": {
+                            "id": 1,
+                            "username": "user123"
+                        },
+                        "actor": {
+                            "id": 2,
+                            "username": "admin"
+                        },
                         "notification_type": "profile_update",
                         "message": "Your profile has been updated",
-                        "data": {"updated_fields": ["title"]},
+                        "data": {
+                            "updated_fields": ["title", "description"]
+                        },
                         "is_read": False,
-                        "created_at": "2025-02-10T15:30:00Z"
+                        "created_at": "2024-02-15T10:30:00Z"
                     }]
                 }
             ),
