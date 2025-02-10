@@ -7,7 +7,7 @@ from .serializers import UserSerializer
 from .models import Users, Profile
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-import os
+from django.conf import settings
 
 # Create your views here.
 
@@ -18,8 +18,8 @@ class UserListCreateView(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [permissions.AllowAny()]
-        # Use global setting for GET requests
-        return [permissions.IsAuthenticated()] if os.getenv('API_REQUIRE_AUTH', 'True').lower() == 'true' else [permissions.AllowAny()]
+        # Use settings variable instead of directly accessing env
+        return [permissions.IsAuthenticated()] if settings.API_REQUIRE_AUTH else [permissions.AllowAny()]
 
     @swagger_auto_schema(
         operation_summary="List all users",
