@@ -14,6 +14,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - backend
     deploy:
@@ -28,7 +30,7 @@ services:
           cpus: "0.75"
           memory: 1G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health/" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -43,7 +45,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U personal_staging"]
+      test: [ "CMD-SHELL", "pg_isready -U personal_staging" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -53,6 +55,28 @@ services:
           cpus: "0.75"
           memory: 1G
 
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data_staging:/data
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   backend:
     driver: bridge
@@ -60,4 +84,6 @@ networks:
 
 volumes:
   postgres_data_staging:
+    driver: local
+  redis_data_staging:
     driver: local
