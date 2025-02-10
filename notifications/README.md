@@ -1,91 +1,46 @@
-# Django Notifications App
+# 🔔 Notifications Service
 
-A flexible and real-time notification system for Django applications with WebSocket support.
+A real-time notification system integrated with the Users service, providing WebSocket-based notifications for profile updates and system events.
 
-## Features
+## ✨ Features
 
-- Real-time notifications using WebSocket
-- Multiple notification types support
-- Soft deletion of notifications
-- Read/Unread status tracking
-- Generic relations to any model
-- REST API endpoints
-- Authentication-optional endpoints
-- Swagger/OpenAPI documentation
-- WebSocket real-time updates
-- Redis channel layer support
+- 🚀 Real-time notifications via WebSocket
+- 📝 Multiple notification types (Profile Update, Mention, System)
+- 🗑️ Soft deletion support
+- ✅ Read/Unread status tracking
+- 🔗 Generic relations to any model
+- 🔌 REST API endpoints
+- 🔐 Configurable authentication
+- ⚡ WebSocket real-time updates
+- 📦 Redis channel layer integration
 
-## Installation
+## 📋 System Architecture
 
-1. Add 'notifications' to your INSTALLED_APPS:
+### Integration with Users Service
 
-```python
-INSTALLED_APPS = [
-    ...
-    'notifications',
-    'channels',  # Required for WebSocket support
-]
-```
+The notification system is tightly integrated with the Users service to provide automatic notifications for:
 
-2. Add the WebSocket routing to your project's routing.py:
+- Profile updates
+- User mentions
+- System notifications
 
-```python
-from django.urls import re_path
-from notifications.consumers import NotificationConsumer
+### Environment Configuration
 
-websocket_urlpatterns = [
-    re_path(r'ws/notifications/$', NotificationConsumer.as_asgi()),
-]
-```
+The service behavior can be configured through environment variables:
 
-3. Configure Redis for channel layers in settings.py:
+| Variable           | Description                | Default |
+| ------------------ | -------------------------- | ------- |
+| `API_REQUIRE_AUTH` | Control API authentication | `True`  |
+| `REDIS_HOST`       | Redis host for WebSocket   | `redis` |
 
-```python
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(os.getenv('REDIS_HOST', 'redis'), 6379)],
-        },
-    },
-}
-```
+## 🔌 API Endpoints
 
-4. Add the notification URLs to your project's urls.py:
+### List Notifications
 
-```python
-from django.urls import path, include
-
-urlpatterns = [
-    ...
-    path('api/notifications/', include('notifications.urls')),
-]
-```
-
-## Configuration
-
-### Environment Variables
-
-- `API_REQUIRE_AUTH`: Control whether API endpoints require authentication (default: True)
-- `REDIS_HOST`: Redis host for WebSocket channel layer (default: 'redis')
-
-### Available Settings
-
-```python
-# settings.py
-
-# API Authentication settings
-API_REQUIRE_AUTH = os.getenv('API_REQUIRE_AUTH', 'True').lower() == 'true'
-```
-
-## API Endpoints
-
-### 1. List Notifications
-
-```
+```http
 GET /api/notifications/
 
-Response:
+Response 200:
 {
     "id": 1,
     "recipient": {"id": 1, "username": "testuser"},
@@ -98,55 +53,53 @@ Response:
 }
 ```
 
-### 2. Mark Notification as Read
+### Mark as Read
 
-```
+```http
 POST /api/notifications/{id}/mark-read/
 
-Response:
+Response 200:
 {
     "status": "marked as read"
 }
 ```
 
-### 3. Mark All Notifications as Read
+### Mark All as Read
 
-```
+```http
 POST /api/notifications/mark-all-read/
 
-Response:
+Response 200:
 {
     "status": "all marked as read"
 }
 ```
 
-### 4. Delete Notification
+### Delete Notification
 
-```
+```http
 DELETE /api/notifications/{id}/delete/
 
-Response:
+Response 200:
 {
     "status": "deleted"
 }
 ```
 
-## WebSocket Integration
+## 🔌 WebSocket Integration
 
-### Connecting to WebSocket
+### Connection
 
 ```javascript
-// Connect to notification WebSocket
 const socket = new WebSocket("ws://your-domain/ws/notifications/");
 
-// Listen for messages
 socket.onmessage = function (event) {
   const notification = JSON.parse(event.data);
   console.log("New notification:", notification);
 };
 ```
 
-### Marking Notifications as Read via WebSocket
+### Mark as Read via WebSocket
 
 ```javascript
 socket.send(
@@ -157,7 +110,7 @@ socket.send(
 );
 ```
 
-## Creating Notifications
+## 📝 Creating Notifications
 
 Use the NotificationService to create new notifications:
 
@@ -165,7 +118,6 @@ Use the NotificationService to create new notifications:
 from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
 
-# Create a notification
 NotificationService.create_notification(
     recipient=user,
     notification_type=NotificationTypes.PROFILE_UPDATE,
@@ -176,59 +128,58 @@ NotificationService.create_notification(
 )
 ```
 
-## Notification Types
+## 📊 Notification Types
 
-Available notification types (customizable in `constants.py`):
+Available types in `constants.py`:
 
 - `profile_update`: Profile update notifications
 - `mention`: User mention notifications
 - `system`: System notifications
 
-## Models
+## 📚 Data Models
 
-### Notification Model Fields
+### Notification Model
 
-- `recipient`: User who receives the notification
-- `actor`: User who triggered the notification (optional)
-- `notification_type`: Type of notification
-- `message`: Notification message
-- `data`: Additional JSON data
-- `is_read`: Read status
-- `is_deleted`: Soft deletion status
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp
+| Field               | Type          | Description                      |
+| ------------------- | ------------- | -------------------------------- |
+| `recipient`         | ForeignKey    | User receiving the notification  |
+| `actor`             | ForeignKey    | User triggering the notification |
+| `notification_type` | CharField     | Type of notification             |
+| `message`           | TextField     | Notification message             |
+| `data`              | JSONField     | Additional data                  |
+| `is_read`           | BooleanField  | Read status                      |
+| `is_deleted`        | BooleanField  | Soft deletion status             |
+| `created_at`        | DateTimeField | Creation timestamp               |
 
-## Testing
+## 🧪 Testing
 
-Run the tests:
+Run the test suite:
 
 ```bash
 python manage.py test notifications
 ```
 
-## Example Usage
+## 💡 Example: Profile Update Flow
 
-### Signal Integration
+1. User updates their profile
+2. Signal handler triggers:
 
 ```python
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from notifications.services import NotificationService
-
-@receiver(post_save, sender=YourModel)
-def notify_update(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Profile)
+def notify_profile_update(sender, instance, created, **kwargs):
     if not created:
         NotificationService.create_notification(
-            recipient=instance.user,
-            notification_type='model_update',
-            message=f'Your {instance._meta.verbose_name} has been updated'
+            recipient=instance.users.user,
+            notification_type=NotificationTypes.PROFILE_UPDATE,
+            message='Your profile has been updated',
+            content_object=instance
         )
 ```
 
-### Frontend Integration Example
+3. WebSocket delivers real-time notification
+4. Frontend receives and displays notification:
 
 ```javascript
-// Connect to WebSocket
 const connectWebSocket = () => {
   const socket = new WebSocket("ws://your-domain/ws/notifications/");
 
@@ -237,31 +188,10 @@ const connectWebSocket = () => {
     showNotification(notification);
   };
 
-  socket.onclose = () => {
-    // Reconnect on close
-    setTimeout(connectWebSocket, 1000);
-  };
-
   return socket;
 };
-
-// Show notification
-const showNotification = (notification) => {
-  // Implement your notification UI logic here
-};
-
-// Initialize WebSocket connection
-const socket = connectWebSocket();
 ```
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License.
+Made with ❤️ for the Personal Website Project
