@@ -4,6 +4,22 @@ from rest_framework import serializers
 from .models import Users, Profile
 
 
+class PublicProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
+        read_only_fields = fields  # All fields read-only for public view
+
+
+class PublicUserSerializer(serializers.ModelSerializer):
+    profile = PublicProfileSerializer(source='users.profile')
+    
+    class Meta:
+        model = User
+        fields = ['username', 'profile']
+        read_only_fields = fields
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
@@ -20,13 +36,14 @@ class UsersSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     users = UsersSerializer()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'users']
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'email': {'required': True}
         }
 
     def to_representation(self, instance):

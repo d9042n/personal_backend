@@ -3,14 +3,26 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
-from .serializers import UserSerializer
+from .serializers import UserSerializer, PublicUserSerializer
+from .services import UserService
 
 
 # Create your views here.
+
+class BaseAuthenticatedView:
+    """Base class for handling API_REQUIRE_AUTH setting"""
+    throttle_classes = [UserRateThrottle]  # Add rate limiting
+    
+    def get_permissions(self):
+        if not settings.API_REQUIRE_AUTH:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
 class UserListCreateView(APIView):
     """
@@ -73,14 +85,14 @@ class UserListCreateView(APIView):
         Creates a new user account with profile information.
         
         Required fields:
-        * username
-        * email
-        * password
+        * username: Unique identifier for the user
+        * email: Valid email address
+        * password: Secure password meeting requirements
         
         Optional fields:
-        * first_name
-        * last_name
-        * profile information (badge, name, title, etc.)
+        * first_name: User's first name
+        * last_name: User's last name
+        * profile information: Professional and social details
         
         Notes:
         * Password must meet minimum security requirements
@@ -91,24 +103,66 @@ class UserListCreateView(APIView):
             type=openapi.TYPE_OBJECT,
             required=['username', 'email', 'password'],
             properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING, description="Unique username"),
-                'email': openapi.Schema(type=openapi.TYPE_STRING, format="email"),
-                'password': openapi.Schema(type=openapi.TYPE_STRING, format="password"),
-                'first_name': openapi.Schema(type=openapi.TYPE_STRING),
-                'last_name': openapi.Schema(type=openapi.TYPE_STRING),
+                'username': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Unique username",
+                    example="user123"
+                ),
+                'email': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format="email",
+                    example="user@example.com"
+                ),
+                'password': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format="password",
+                    example="SecurePass123!"
+                ),
+                'first_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="John"
+                ),
+                'last_name': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="Doe"
+                ),
                 'users': openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
                         'profile': openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
-                                'badge': openapi.Schema(type=openapi.TYPE_STRING),
-                                'name': openapi.Schema(type=openapi.TYPE_STRING),
-                                'title': openapi.Schema(type=openapi.TYPE_STRING),
-                                'description': openapi.Schema(type=openapi.TYPE_STRING),
-                                'github': openapi.Schema(type=openapi.TYPE_STRING, format="uri"),
-                                'linkedin': openapi.Schema(type=openapi.TYPE_STRING, format="uri"),
-                                'twitter': openapi.Schema(type=openapi.TYPE_STRING, format="uri"),
+                                'badge': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="Available for hire"
+                                ),
+                                'name': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="John Doe"
+                                ),
+                                'title': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="Software Developer"
+                                ),
+                                'description': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="Experienced software developer with expertise in web technologies."
+                                ),
+                                'github': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format="uri",
+                                    example="https://github.com/username"
+                                ),
+                                'linkedin': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format="uri",
+                                    example="https://linkedin.com/in/username"
+                                ),
+                                'twitter': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format="uri",
+                                    example="https://twitter.com/username"
+                                ),
                             }
                         )
                     }
@@ -118,19 +172,33 @@ class UserListCreateView(APIView):
         responses={
             201: openapi.Response(
                 description="User created successfully",
-                schema=UserSerializer
+                examples={
+                    "application/json": {
+                        "id": 1,
+                        "username": "user123",
+                        "email": "user@example.com",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "users": {
+                            "profile": {
+                                "badge": "Available for hire",
+                                "name": "John Doe",
+                                "title": "Software Developer"
+                            }
+                        }
+                    }
+                }
             ),
             400: openapi.Response(
                 description="Invalid input",
                 examples={
                     "application/json": {
-                        "username": ["This field is required"],
+                        "username": ["This username is already taken"],
                         "email": ["Enter a valid email address"],
-                        "password": ["This password is too common"]
+                        "password": ["Password must be at least 8 characters long"]
                     }
                 }
-            ),
-            409: "Username or email already exists"
+            )
         },
         tags=['Users']
     )
@@ -301,46 +369,49 @@ class UserDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class PublicUserView(APIView):
+    """Public API endpoint for retrieving user profiles"""
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnonRateThrottle]  # Add rate limiting for public endpoint
+
+    @swagger_auto_schema(
+        operation_summary="Get public profile",
+        operation_description="""
+        Retrieve public profile information for any user by username.
+        
+        This endpoint:
+        * Is always publicly accessible
+        * Does not require authentication
+        * Returns only non-sensitive information
+        * Rate limited to 100 requests/day
+        
+        URL: /api/public/profile/{username}/
+        """,
+        responses={
+            200: PublicUserSerializer,
+            404: "User not found",
+            429: "Too many requests - rate limit exceeded"
+        },
+        tags=['Public Access']
+    )
+    def get(self, request, username):
+        user = get_object_or_404(User, username=username, is_active=True)
+        serializer = PublicUserSerializer(user)
+        return Response(serializer.data)
+
+
 class ProfileView(APIView):
     """
-    API endpoints for managing user profiles
+    API endpoint for managing authenticated user's profile
     """
     permission_classes = [permissions.IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_summary="Get current user profile",
-        operation_description="""
-        Retrieves the profile information of the currently authenticated user.
-        
-        Returns:
-        * Basic user information
-        * Profile details including social links
-        * Account metadata
-        """,
+        operation_summary="Get own profile",
+        operation_description="Retrieve full profile information for authenticated user",
         responses={
-            200: openapi.Response(
-                description="Profile retrieved successfully",
-                schema=UserSerializer,
-                examples={
-                    "application/json": {
-                        "id": 1,
-                        "username": "current_user",
-                        "email": "user@example.com",
-                        "users": {
-                            "profile": {
-                                "badge": "Silver",
-                                "name": "Jane Doe",
-                                "title": "Full Stack Developer",
-                                "description": "Passionate about coding",
-                                "github": "https://github.com/janedoe",
-                                "linkedin": "https://linkedin.com/in/janedoe",
-                                "twitter": "https://twitter.com/janedoe"
-                            }
-                        }
-                    }
-                }
-            ),
-            401: "Authentication credentials were not provided"
+            200: UserSerializer,
+            401: "Authentication required"
         },
         tags=['Profile']
     )
@@ -349,46 +420,198 @@ class ProfileView(APIView):
         return Response(serializer.data)
 
     @swagger_auto_schema(
-        operation_summary="Update current user profile",
+        operation_summary="Update own profile",
         operation_description="""
-        Updates the profile information of the currently authenticated user.
+        Update profile information for authenticated user.
         
-        Updatable fields:
-        * Basic user information (first_name, last_name, email)
-        * Profile details (badge, name, title, description)
-        * Social media links (github, linkedin, twitter)
-        
-        Notes:
-        * Partial updates are supported
-        * Social media links must be valid URLs
-        * Email updates must be unique
+        Supports partial updates for:
+        * Basic information (name, email)
+        * Profile details (title, bio)
+        * Social links
         """,
         request_body=UserSerializer,
         responses={
-            200: openapi.Response(
-                description="Profile updated successfully",
-                schema=UserSerializer
-            ),
-            400: openapi.Response(
-                description="Invalid input",
-                examples={
-                    "application/json": {
-                        "users": {
-                            "profile": {
-                                "github": ["Enter a valid URL"],
-                                "name": ["Ensure this field has no more than 100 characters"]
-                            }
-                        }
-                    }
-                }
-            ),
-            401: "Authentication credentials were not provided"
+            200: UserSerializer,
+            400: "Invalid data",
+            401: "Authentication required"
         },
         tags=['Profile']
     )
-    def put(self, request):
+    def patch(self, request):
         serializer = UserSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             user = serializer.save()
             return Response(UserSerializer(user).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserRegistrationView(APIView):
+    """
+    API endpoint for user registration
+    """
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="Register new user",
+        operation_description="""
+        Create a new user account.
+        
+        Required fields:
+        * username
+        * email
+        * password
+        
+        Optional fields:
+        * profile information
+        """,
+        request_body=UserSerializer,
+        responses={
+            201: UserSerializer,
+            400: "Invalid data"
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
+    """ViewSet for managing user accounts and profiles"""
+    lookup_field = 'username'
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
+    def get_object(self):
+        username = self.kwargs['username']
+        user = get_object_or_404(User, username=username)
+        
+        # For update/delete operations, check user permissions
+        if self.action in ['partial_update', 'destroy']:
+            if user != self.request.user and not self.request.user.is_staff:
+                raise PermissionDenied("You don't have permission to modify this user")
+        return user
+
+    @swagger_auto_schema(
+        operation_summary="Register new account",
+        operation_description="""
+        Create a new user account with profile information.
+        
+        This endpoint:
+        * Is always publicly accessible
+        * Does not require authentication
+        * Allows new users to register
+        
+        Required fields:
+        * username (unique)
+        * email (unique)
+        * password
+        
+        Optional:
+        * Profile information
+        * Social media links
+        """,
+        request_body=UserSerializer,
+        responses={
+            201: UserSerializer,
+            400: "Invalid data - see response for details"
+        },
+        tags=['Public Access']
+    )
+    def create(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Get user profile",
+        operation_description="""
+        Retrieve complete user profile information.
+        
+        Authentication:
+        * Required if API_REQUIRE_AUTH is True
+        * Optional if API_REQUIRE_AUTH is False
+        
+        Note: For public profile access, use /api/public/profile/{username}/ instead
+        """,
+        responses={
+            200: UserSerializer,
+            401: "Authentication required when API_REQUIRE_AUTH is True",
+            404: "User not found"
+        },
+        tags=['Protected Access']
+    )
+    def retrieve(self, request, username):
+        user = self.get_object()
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_summary="Update user profile",
+        operation_description="""
+        Update user profile information.
+        
+        Authentication:
+        * Required if API_REQUIRE_AUTH is True
+        * Optional if API_REQUIRE_AUTH is False
+        
+        Authorization:
+        * Users can only update their own profile
+        * Staff users can update any profile
+        
+        Supports partial updates for:
+        * Basic information (name, email)
+        * Profile details (title, bio)
+        * Social links
+        """,
+        request_body=UserSerializer,
+        responses={
+            200: UserSerializer,
+            400: "Invalid data",
+            401: "Authentication required when API_REQUIRE_AUTH is True",
+            403: "Permission denied - can only modify own profile",
+            404: "User not found"
+        },
+        tags=['Protected Access']
+    )
+    def partial_update(self, request, username):
+        user = self.get_object()
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(UserSerializer(user).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Delete user account",
+        operation_description="""
+        Permanently delete user account and all associated data.
+        
+        Authentication:
+        * Required if API_REQUIRE_AUTH is True
+        * Optional if API_REQUIRE_AUTH is False
+        
+        Authorization:
+        * Users can only delete their own account
+        * Staff users can delete any account
+        """,
+        responses={
+            204: "Account deleted successfully",
+            401: "Authentication required when API_REQUIRE_AUTH is True",
+            403: "Permission denied - can only delete own account",
+            404: "User not found"
+        },
+        tags=['Protected Access']
+    )
+    def destroy(self, request, username):
+        user = self.get_object()
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

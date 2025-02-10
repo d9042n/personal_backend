@@ -26,12 +26,19 @@ from rest_framework import permissions
 # Add schema view configuration
 schema_view = get_schema_view(
     openapi.Info(
-        title="Users API",
+        title="Personal Backend API",
         default_version='v1',
-        description="API endpoints for user management and profiles",
-        terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="contact@example.com"),
-        license=openapi.License(name="BSD License"),
+        description="""
+        API documentation for Personal Backend services.
+        
+        Key features:
+        * User management with extended profiles
+        * Real-time notifications
+        * Social media integration
+        """,
+        terms_of_service="https://www.example.com/terms/",
+        contact=openapi.Contact(email="support@example.com"),
+        license=openapi.License(name="MIT License"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
