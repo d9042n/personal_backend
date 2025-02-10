@@ -172,3 +172,8 @@ cython_debug/
 
 # .idea
 .idea/
+
+# Environment files
+.env.development
+.env.staging
+.env.production
