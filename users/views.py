@@ -1,13 +1,14 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
-from .serializers import UserSerializer
-from .models import Users, Profile
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 from django.conf import settings
+from django.contrib.auth.models import User, AnonymousUser
+from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .serializers import UserSerializer
+
 
 # Create your views here.
 
@@ -15,6 +16,7 @@ class UserListCreateView(APIView):
     """
     API endpoints for listing and creating users
     """
+
     def get_permissions(self):
         if self.request.method == 'POST':
             return [permissions.AllowAny()]
@@ -55,6 +57,12 @@ class UserListCreateView(APIView):
         tags=['Users']
     )
     def get(self, request):
+        # If authentication is not required and user is anonymous, return limited data
+        if not settings.API_REQUIRE_AUTH and isinstance(request.user, AnonymousUser):
+            users = User.objects.filter(is_active=True)  # Only show active users
+            serializer = UserSerializer(users, many=True, context={'limited_fields': True})
+            return Response(serializer.data)
+
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
@@ -133,6 +141,7 @@ class UserListCreateView(APIView):
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserDetailView(APIView):
     """
     API endpoints for retrieving, updating, and deleting specific users
@@ -154,7 +163,7 @@ class UserDetailView(APIView):
         """,
         manual_parameters=[
             openapi.Parameter(
-                'pk', 
+                'pk',
                 openapi.IN_PATH,
                 description="The ID of the user to retrieve",
                 type=openapi.TYPE_INTEGER,
@@ -290,6 +299,7 @@ class UserDetailView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class ProfileView(APIView):
     """
