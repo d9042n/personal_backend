@@ -1,38 +1,39 @@
-# 🐳 Docker Swarm Infrastructure Guide
+# 🐳 Docker Swarm Deployment Guide
 
-A comprehensive guide for setting up and managing our Docker Swarm infrastructure for development, staging, and production environments.
+A comprehensive guide for deploying our application using Docker Swarm in both single-node and multi-node environments.
 
 ## 📑 Table of Contents
 
 - [Architecture Overview](#-architecture-overview)
 - [Prerequisites](#-prerequisites)
-- [Quick Start](#-quick-start)
-- [Detailed Setup Guide](#-detailed-setup-guide)
-- [Environment Management](#-environment-management)
+- [Single-Node Deployment](#-single-node-deployment)
+- [Multi-Node Deployment](#-multi-node-deployment)
 - [Common Operations](#-common-operations)
+- [Monitoring & Maintenance](#-monitoring--maintenance)
 - [Troubleshooting](#-troubleshooting)
-- [Best Practices](#-best-practices)
 
 ## 🏗 Architecture Overview
 
-### Development Environment
-
-- Single-node setup
-- Hot-reload enabled
-- Direct volume mounts
-- Local development optimized
-
-### Staging/Production Environment
+### Single-Node Setup
 
 ```
-                           [Load Balancer]
-                                 │
-                    ┌────────────┴──────────────┐
-                    │                           │
-              [Manager Node]               [Manager Node]
-                    │                           │
-         ┌─────┬────┴────┬─────┐       ┌─────┬──┴──┬─────┐
-    [Worker 1] [Worker 2] [Worker 3]  [DB]  [Redis] [Worker 4]
+                    [Docker Swarm Node]
+                           │
+         ┌─────────┬───────┴───────┬─────────┐
+    [Backend x2] [Redis x1]    [Postgres x1]
+```
+
+### Multi-Node Setup
+
+```
+                        [Load Balancer]
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+          [Manager Node]               [Manager Node]
+                │                           │
+     ┌─────┬────┴────┬─────┐       ┌─────┬──┴──┬─────┐
+[Worker 1] [Worker 2] [Worker 3]  [DB]  [Redis] [Worker 4]
 ```
 
 ## 📋 Prerequisites
@@ -40,21 +41,90 @@ A comprehensive guide for setting up and managing our Docker Swarm infrastructur
 - Docker Engine 24.0+
 - Docker Compose v2.0+
 - Make utility
-- Access to a container registry
+- Git
+- Container Registry (optional for single node)
 
-## 🚀 Quick Start
+## 🚀 Single-Node Deployment
 
-1. Initialize Swarm:
+### 1. Initial Setup
 
 ```bash
-# On manager node
-make swarm-init
+# Clone repository
+git clone <repository-url>
+cd <project-directory>
 
-# Copy join token and run on worker nodes
-make swarm-join-token
+# Initialize swarm
+docker swarm init
 ```
 
-2. Label nodes:
+### 2. Environment Configuration
+
+```bash
+# Create staging environment file
+cat > .env.staging << EOF
+POSTGRES_DB=personal_staging
+POSTGRES_USER=personal_staging
+POSTGRES_PASSWORD=<your-secure-password>
+REDIS_HOST=redis
+DATABASE_URL=postgresql://personal_staging:<your-secure-password>@db:5432/personal_staging
+EOF
+
+# Create production environment file
+cat > .env.production << EOF
+POSTGRES_DB=personal_production
+POSTGRES_USER=personal_production
+POSTGRES_PASSWORD=<your-secure-password>
+REDIS_HOST=redis
+DATABASE_URL=postgresql://personal_production:<your-secure-password>@db:5432/personal_production
+EOF
+```
+
+### 3. Deploy Staging
+
+```bash
+# Build and deploy staging
+make staging-build
+make staging-deploy
+
+# Verify deployment
+make staging-ps
+make staging-logs
+
+# Run migrations
+docker exec -it $(docker ps -q -f name=personal-staging_backend) python manage.py migrate
+```
+
+### 4. Deploy Production
+
+```bash
+# Build and deploy production
+make production-build
+make production-deploy
+
+# Verify deployment
+make production-ps
+make production-logs
+
+# Run migrations
+docker exec -it $(docker ps -q -f name=personal_backend) python manage.py migrate
+```
+
+## 🌐 Multi-Node Deployment
+
+### 1. Infrastructure Setup
+
+```bash
+# On first manager node
+docker swarm init --advertise-addr <MANAGER1-IP>
+
+# On second manager node (using token from first manager)
+docker swarm join --token <MANAGER-TOKEN> <MANAGER1-IP>:2377
+
+# On worker nodes (using worker token)
+docker swarm join --token <WORKER-TOKEN> <MANAGER1-IP>:2377
+```
+
+### 2. Node Labeling
 
 ```bash
 # Label database node
@@ -64,149 +134,55 @@ make node-label-db node=worker1
 make node-label-cache node=worker2
 ```
 
-3. Deploy stack:
+### 3. Registry Setup
 
 ```bash
-# Build and push images
-make production-build
-make production-push
+# Log in to registry
+docker login <your-registry>
 
+# Build and push images
+make production-build TAG=1.0.0
+make production-push TAG=1.0.0
+```
+
+### 4. Deployment
+
+```bash
 # Deploy stack
 make production-deploy
-```
 
-## 📖 Detailed Setup Guide
-
-### 1. Environment Setup
-
-#### Development
-
-```bash
-# Start development environment
-make development-build
-make development-up
-
-# Access development environment
-make development-shell
-```
-
-#### Staging
-
-```bash
-# Deploy staging environment
-make staging-build
-make staging-push
-make staging-deploy
-
-# Scale staging services
-make staging-scale replicas=2
-```
-
-#### Production
-
-```bash
-# Deploy production environment
-make production-build
-make production-push
-make production-deploy
-
-# Scale production services
+# Scale services
 make production-scale replicas=3
-```
 
-### 2. Service Configuration
-
-Each service is configured with specific resource limits and placement constraints:
-
-#### Backend Service
-
-```yaml
-deploy:
-  mode: replicated
-  replicas: 3
-  resources:
-    limits:
-      cpus: "0.75"
-      memory: 1G
-    reservations:
-      cpus: "0.25"
-      memory: 512M
-  placement:
-    constraints:
-      - node.role==worker
-```
-
-#### Database Service
-
-```yaml
-deploy:
-  mode: replicated
-  replicas: 1
-  placement:
-    constraints:
-      - node.labels.db==true
-  resources:
-    limits:
-      cpus: "1.0"
-      memory: 2G
-```
-
-## 🔄 Environment Management
-
-### Development to Production Workflow
-
-1. Develop locally:
-
-```bash
-make development-up
-```
-
-2. Test in staging:
-
-```bash
-make staging-build TAG=v1.0.0-rc1
-make staging-push TAG=v1.0.0-rc1
-make staging-deploy
-```
-
-3. Deploy to production:
-
-```bash
-make production-build TAG=v1.0.0
-make production-push TAG=v1.0.0
-make production-deploy
-```
-
-### Rolling Updates
-
-```bash
-# Update service with zero downtime
-make production-update TAG=v1.0.1
+# Verify deployment
+make production-ps
+make production-services
 ```
 
 ## 🛠 Common Operations
 
-### Monitoring
-
-```bash
-# Check service status
-make production-ps
-
-# View logs
-make production-logs
-
-# Inspect nodes
-make swarm-nodes
-```
-
-### Scaling
+### Scaling Services
 
 ```bash
 # Scale backend service
-make production-scale replicas=5
+make production-scale replicas=3
 
 # Check scaling status
 make production-services
+```
+
+### Updates and Rollbacks
+
+```bash
+# Update service
+make production-update TAG=1.0.1
+
+# Monitor update
+make production-ps
+make production-logs
+
+# Rollback if needed
+make production-update TAG=1.0.0
 ```
 
 ### Database Operations
@@ -219,67 +195,127 @@ make db-backup
 make db-restore file=backup_20240215_120000.sql
 ```
 
-## 🚨 Troubleshooting
+## 📊 Resource Allocation
 
-### Common Issues
+### Single-Node Configuration
 
-1. Service Won't Start
+| Service  | CPU Limit | Memory Limit | Replicas |
+| -------- | --------- | ------------ | -------- |
+| Backend  | 0.75      | 1GB          | 2        |
+| Database | 0.50      | 1GB          | 1        |
+| Redis    | 0.25      | 512MB        | 1        |
 
-```bash
-# Check service logs
-make production-logs
-
-# Verify node resources
-make swarm-inspect node=worker1
-```
-
-2. Node Communication Issues
-
-```bash
-# Verify network
-make stack-networks
-
-# Check node status
-make swarm-nodes
-```
-
-## ✅ Best Practices
-
-### 1. Resource Management
-
-- Always set both limits and reservations
-- Monitor resource usage
-- Scale based on metrics
-
-### 2. High Availability
-
-- Use multiple manager nodes (3-5)
-- Distribute workloads across nodes
-- Implement proper backup strategies
-
-### 3. Security
-
-- Use overlay networks with encryption
-- Implement secrets management
-- Regular security audits
-
-### 4. Monitoring
-
-- Set up proper logging
-- Implement health checks
-- Monitor resource usage
-
-## 📊 Resource Guidelines
-
-### Recommended Configurations
+### Multi-Node Configuration
 
 | Service  | CPU Limit | Memory Limit | Replicas |
 | -------- | --------- | ------------ | -------- |
 | Backend  | 0.75      | 1GB          | 3-5      |
 | Database | 1.0       | 2GB          | 1        |
-| Redis    | 0.5       | 512MB        | 1        |
+| Redis    | 0.50      | 512MB        | 1        |
 
-## 🔍 Additional Resources
+## 🔍 Health Monitoring
+
+### Service Health Checks
+
+```bash
+# Check service status
+make production-ps
+
+# View service logs
+make production-logs
+
+# Monitor resources
+docker stats
+```
+
+### Automated Health Checks
+
+All services include built-in health checks:
+
+- Backend: HTTP check on /health/
+- Database: pg_isready check
+- Redis: ping check
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **Service Won't Start**
+
+```bash
+# Check service logs
+make production-logs
+
+# Verify resources
+docker stats
+```
+
+2. **Database Connection Issues**
+
+```bash
+# Check database logs
+docker service logs personal_db
+
+# Verify network connectivity
+docker network inspect backend
+```
+
+3. **Memory/CPU Issues**
+
+```bash
+# Check resource usage
+docker stats
+
+# Scale down if needed
+make production-scale replicas=2
+```
+
+## 📝 Best Practices
+
+### Security
+
+- Use secrets for sensitive data
+- Enable network encryption
+- Regular security updates
+- Proper user permissions
+
+### Backups
+
+- Regular database backups
+- Configuration backups
+- Documented restore procedures
+
+### Monitoring
+
+- Resource monitoring
+- Log aggregation
+- Health check alerts
+- Performance metrics
+
+### Updates
+
+- Rolling updates
+- Version control
+- Backup before updates
+- Test in staging first
+
+## 🔄 Lifecycle Management
+
+### Development Workflow
+
+1. Develop locally
+2. Test in staging
+3. Deploy to production
+4. Monitor and maintain
+
+### Update Process
+
+1. Build new version
+2. Test in staging
+3. Rolling update in production
+4. Monitor deployment
+
+## 📚 Additional Resources
 
 - [Docker Swarm Documentation](https://docs.docker.com/engine/swarm/)
 - [Docker Compose Reference](https://docs.docker.com/compose/compose-file/)

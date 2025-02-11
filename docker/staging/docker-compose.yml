@@ -26,14 +26,6 @@ services:
         order: start-first
         failure_action: rollback
         monitor: 40s
-      rollback_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
       resources:
         limits:
           cpus: "0.75"
@@ -41,9 +33,6 @@ services:
         reservations:
           cpus: "0.25"
           memory: 512M
-      placement:
-        constraints:
-          - node.role==worker
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s
@@ -67,16 +56,10 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      placement:
-        constraints:
-          - node.labels.db==true
       resources:
         limits:
-          cpus: "0.75"
+          cpus: "0.50"
           memory: 1G
-        reservations:
-          cpus: "0.25"
-          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U personal_staging"]
       interval: 10s
@@ -92,16 +75,10 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      placement:
-        constraints:
-          - node.labels.cache==true
       resources:
         limits:
-          cpus: "0.50"
-          memory: 512M
-        reservations:
           cpus: "0.25"
-          memory: 256M
+          memory: 512M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
