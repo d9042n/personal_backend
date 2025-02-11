@@ -1,0 +1,93 @@
+name: Create Pull Request
+
+on:
+  push:
+    branches-ignore:
+      - '**/dependabot/**' # Ignore pushes from Dependabot and other automated branches
+      - main              # Avoid processing push events to "main" branch directly
+      - develop           # You can customize branches to ignore if needed
+
+permissions:
+  contents: write         # Required to create pull requests via the GitHub API
+  pull-requests: write    # Allows creating and managing PRs
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check commit messages and create PR
+        id: create_pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+        run: |
+          set -euo pipefail
+          echo "Parsing commit messages..."
+          pr_found=false
+          destination_branch=""
+          for commit_message in "${{ join(github.event.commits.*.message, '|||') }}"; do
+            # Split the commit messages
+            IFS='|||' read -ra messages <<< "$commit_message"
+            for message in "${messages[@]}"; do
+              echo "Commit message: $message"
+              if [[ "$message" =~ \[PR\ to\ branch:([^]]+)\] ]]; then
+                destination_branch="${BASH_REMATCH[1]}"
+                echo "Found destination branch: $destination_branch"
+                pr_found=true
+                break 2  # Exit both loops
+              fi
+            done
+          done
+
+          if [ "$pr_found" = true ]; then
+            # Get the source branch name
+            source_branch="${GITHUB_REF#refs/heads/}"
+            echo "Source branch: $source_branch"
+            echo "Destination branch: $destination_branch"
+
+            # Create pull request via GitHub API
+            echo "Creating pull request from $source_branch to $destination_branch..."
+            pr_response=$(curl -L \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls \
+              -d "{\"title\":\"Auto PR: $source_branch to $destination_branch\",\"head\":\"$source_branch\",\"base\":\"$destination_branch\"}")
+
+            echo "Pull request response: $pr_response"
+
+            # Extract and display the PR URL
+            pr_url=$(echo "$pr_response" | jq -r '.html_url')
+            if [ "$pr_url" != "null" ]; then
+              echo "Pull request created: $pr_url"
+              echo "::set-output name=pr_url::$pr_url"
+            else
+              error_message=$(echo "$pr_response" | jq -r '.errors[0].message')
+              if [[ "$error_message" == "A pull request already exists for d9042n:cicd." ]]; then
+                echo "A pull request already exists for this branch."
+                pr_url=$(curl -L \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?head=d9042n:cicd | jq -r '.[0].html_url')
+                echo "::set-output name=pr_url::$pr_url"
+              elif [[ "$error_message" == "No commits between $destination_branch and $destination_branch" ]]; then
+                echo "No commits between $destination_branch and $destination_branch. Ignoring error."
+                exit 0
+              else
+                echo "Failed to create pull request. Response: $pr_response"
+                exit 1
+              fi
+            fi
+          else
+            echo "No commit message contains '[PR to branch:<branch_name>]'."
+            exit 0
+          fi
+        shell: bash
+
+      - name: Handle errors
+        if: failure()
+        run: echo "An error occurred during the workflow execution."
