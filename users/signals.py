@@ -18,18 +18,26 @@ def notify_profile_update(sender, instance, created, **kwargs):
         # If update_fields is empty, consider all fields potentially changed
         if not update_fields:
             update_fields = [
-                'badge', 'name', 'title', 'description', 
+                'is_available', 'badge', 'name', 'title', 'description', 
                 'github', 'linkedin', 'twitter'
             ]
+        
+        # Special handling for availability status change
+        if 'is_available' in update_fields:
+            status_text = 'available' if instance.is_available else 'unavailable'
+            message = f'Your availability status has been updated to {status_text}'
+        else:
+            message = f'Your profile has been updated: {", ".join(update_fields)}'
         
         NotificationService.create_notification(
             recipient=instance.users.user,
             notification_type=NotificationTypes.PROFILE_UPDATE,
-            message=f'Your profile has been updated: {", ".join(update_fields)}',
+            message=message,
             content_object=instance,
             extra_data={
                 'updated_fields': list(update_fields),
                 'profile_id': instance.id,
-                'username': instance.users.user.username
+                'username': instance.users.user.username,
+                'is_available': instance.is_available
             }
         )

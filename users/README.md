@@ -29,6 +29,7 @@ Returns public profile information for any user.
 {
   "username": "johndoe",
   "profile": {
+    "is_available": true,
     "name": "John Doe",
     "title": "Software Developer",
     "badge": "Available",
@@ -49,6 +50,7 @@ POST /api/users/
     "password": "secure_password",
     "users": {
         "profile": {
+            "is_available": true,
             "name": "New User",
             "title": "Developer"
         }
@@ -92,18 +94,18 @@ DELETE /api/users/{username}/
 ## 🔒 Security Features
 
 - Public access limited to:
-    - Viewing public profiles (/public/profile/{username}/)
-    - User registration (/users/ POST)
+  - Viewing public profiles (/public/profile/{username}/)
+  - User registration (/users/ POST)
 - Protected operations require:
-    - Authentication (when API_REQUIRE_AUTH is True)
-    - Authorization (can only modify own profile)
+  - Authentication (when API_REQUIRE_AUTH is True)
+  - Authorization (can only modify own profile)
 - Rate limiting:
-    - Public endpoints: 100 requests/day
-    - Authenticated users: 1000 requests/day
+  - Public endpoints: 100 requests/day
+  - Authenticated users: 1000 requests/day
 - Password security:
-    - Minimum length: 10 characters
-    - Complexity requirements enforced
-    - Hashing using Django's default hasher
+  - Minimum length: 10 characters
+  - Complexity requirements enforced
+  - Hashing using Django's default hasher
 - Email verification required
 - CORS protection enabled
 - XSS protection
@@ -114,23 +116,23 @@ DELETE /api/users/{username}/
 
 1. **RESTful Design**
 
-    - Clear public/protected endpoint separation
-    - Consistent URL structure (/public/profile/, /users/)
-    - Proper HTTP methods (GET, POST, PATCH, DELETE)
-    - Meaningful status codes
+   - Clear public/protected endpoint separation
+   - Consistent URL structure (/public/profile/, /users/)
+   - Proper HTTP methods (GET, POST, PATCH, DELETE)
+   - Meaningful status codes
 
 2. **Security First**
 
-    - Secure by default
-    - Rate limiting
-    - Input validation
-    - Clear authentication rules
+   - Secure by default
+   - Rate limiting
+   - Input validation
+   - Clear authentication rules
 
 3. **Clean Architecture**
-    - Separation of concerns
-    - Modular design
-    - Clear documentation
-    - Consistent error handling
+   - Separation of concerns
+   - Modular design
+   - Clear documentation
+   - Consistent error handling
 
 ## 💻 Development Guide
 
@@ -174,6 +176,13 @@ python manage.py test users
 - Integrates with Notification system
 - Supports WebSocket connections
 - Extensible for additional features
+
+## 🔌 Profile Features
+
+- 🎯 Availability Control
+  - Toggle badge visibility with `is_available`
+  - Automatic notification on status change
+  - Real-time frontend updates
 
 ---
 

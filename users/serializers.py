@@ -7,7 +7,7 @@ from .models import Users, Profile
 class PublicProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
+        fields = ['is_available', 'badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
         read_only_fields = fields  # All fields read-only for public view
 
 
@@ -23,7 +23,7 @@ class PublicUserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
+        fields = ['is_available', 'badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
 
 
 class UsersSerializer(serializers.ModelSerializer):
