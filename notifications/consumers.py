@@ -50,12 +50,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.mark_notification_as_read(notification_id)
 
     async def notification_message(self, event):
-        # Don't send notifications to anonymous users
+        """Handle incoming notification messages"""
         if isinstance(self.scope["user"], AnonymousUser):
             return
 
-        # Send notification to WebSocket
-        await self.send(text_data=json.dumps(event["data"]))
+        data = event["data"]
+        
+        # Send notification to WebSocket with specific handling for profile updates
+        await self.send(text_data=json.dumps({
+            "type": data["type"],
+            "message": data["message"],
+            "id": data["id"],
+            "created_at": data["created_at"],
+            "profile_update": data.get("profile_update"),
+            "data": data["data"]
+        }))
 
     @database_sync_to_async
     def mark_notification_as_read(self, notification_id):

@@ -2,9 +2,12 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+import logging
 
 from .constants import NotificationTypes
 from .models import Notification
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationService:
@@ -42,6 +45,20 @@ class NotificationService:
             data=extra_data or {}
         )
 
+        # Prepare WebSocket payload
+        payload = {
+            "id": notification.id,
+            "type": notification_type,
+            "message": message,
+            "created_at": notification.created_at.isoformat(),
+            "data": notification.data,
+            "profile_update": {
+                "fields": extra_data.get('updated_fields', []) if extra_data else [],
+                "profile_id": extra_data.get('profile_id') if extra_data else None,
+                "username": extra_data.get('username') if extra_data else None
+            } if notification_type == NotificationTypes.PROFILE_UPDATE else None
+        }
+
         # Send WebSocket notification
         try:
             channel_layer = get_channel_layer()
@@ -49,17 +66,10 @@ class NotificationService:
                 f"user_notifications_{recipient.id}",
                 {
                     "type": "notification_message",
-                    "data": {
-                        "id": notification.id,
-                        "type": notification_type,
-                        "message": message,
-                        "created_at": notification.created_at.isoformat(),
-                        "data": notification.data
-                    }
+                    "data": payload
                 }
             )
         except Exception as e:
-            # Log the error but don't prevent notification creation
-            print(f"Error sending WebSocket notification: {e}")
+            logger.error(f"Error sending WebSocket notification: {e}", exc_info=True)
 
         return notification
