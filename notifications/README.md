@@ -1,6 +1,7 @@
 # 🔔 Notifications Service
 
-A real-time notification system integrated with the Users service, providing WebSocket-based notifications for profile updates and system events.
+A real-time notification system integrated with the Users service, providing WebSocket-based notifications for profile
+updates and system events.
 
 ## ✨ Features
 
@@ -191,6 +192,79 @@ const connectWebSocket = () => {
   return socket;
 };
 ```
+
+# 🔔 Real-time Profile Update Notifications
+
+## WebSocket Integration for Profile Updates
+
+### Connection Setup
+
+```javascript
+const socket = new WebSocket("ws://your-domain/ws/notifications/");
+
+socket.onmessage = function (event) {
+  const notification = JSON.parse(event.data);
+
+  // Handle profile updates
+  if (notification.type === "profile_update") {
+    const { fields, profile_id, username } = notification.profile_update;
+
+    // Update UI with changed fields
+    updateProfileUI(fields, profile_id, username);
+  }
+};
+```
+
+### Profile Update Notification Format
+
+```json
+{
+  "type": "profile_update",
+  "message": "Your profile has been updated: title, description",
+  "id": 123,
+  "created_at": "2024-03-15T10:30:00Z",
+  "profile_update": {
+    "fields": ["title", "description"],
+    "profile_id": 456,
+    "username": "john_doe"
+  },
+  "data": {
+    "updated_fields": ["title", "description"],
+    "profile_id": 456,
+    "username": "john_doe"
+  }
+}
+```
+
+### Frontend Integration Example
+
+```javascript
+function updateProfileUI(changedFields, profileId, username) {
+  // Refresh specific profile sections based on changed fields
+  changedFields.forEach((field) => {
+    switch (field) {
+      case "title":
+        refreshProfileTitle(profileId);
+        break;
+      case "description":
+        refreshProfileDescription(profileId);
+        break;
+      // Handle other fields...
+    }
+  });
+
+  // Show notification toast
+  showNotification(`Profile updated: ${changedFields.join(", ")}`);
+}
+```
+
+## Features
+
+- 🚀 Real-time profile update notifications
+- 📝 Detailed change tracking
+- 🔌 WebSocket-based delivery
+- 🔐 Authenticated connections
+- 📦 Field-specific updates
 
 ---
 

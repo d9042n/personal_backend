@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  web:
+  backend:
     build:
       context: ../../
       dockerfile: docker/development/Dockerfile
@@ -37,7 +37,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U personal" ]
+      test: ["CMD-SHELL", "pg_isready -U personal"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,7 +54,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

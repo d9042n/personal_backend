@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import transaction
-from .models import Users, Profile
+
 
 class UserService:
     @staticmethod
@@ -26,16 +26,16 @@ class UserService:
             password=password,
             **extra_fields
         )
-        
+
         # Update profile if data provided
         if profile_data:
             profile = user.users.profile
             for key, value in profile_data.items():
                 setattr(profile, key, value)
             profile.save()
-            
+
         return user
-    
+
     @staticmethod
     @transaction.atomic
     def update_user_profile(user, profile_data):
@@ -53,4 +53,4 @@ class UserService:
         for key, value in profile_data.items():
             setattr(profile, key, value)
         profile.save()
-        return profile 
+        return profile

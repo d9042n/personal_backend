@@ -29,6 +29,7 @@ Returns public profile information for any user.
 {
   "username": "johndoe",
   "profile": {
+    "is_available": true,
     "name": "John Doe",
     "title": "Software Developer",
     "badge": "Available",
@@ -49,6 +50,7 @@ POST /api/users/
     "password": "secure_password",
     "users": {
         "profile": {
+            "is_available": true,
             "name": "New User",
             "title": "Developer"
         }
@@ -174,6 +176,13 @@ python manage.py test users
 - Integrates with Notification system
 - Supports WebSocket connections
 - Extensible for additional features
+
+## 🔌 Profile Features
+
+- 🎯 Availability Control
+  - Toggle badge visibility with `is_available`
+  - Automatic notification on status change
+  - Real-time frontend updates
 
 ---
 

@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils.translation import gettext_lazy as _
+
 from .validators import validate_github_url, validate_linkedin_url, validate_twitter_url
 
 
@@ -26,6 +28,11 @@ class Users(models.Model):
 
 class Profile(models.Model):
     users = models.OneToOneField(Users, on_delete=models.CASCADE, related_name='profile')
+    is_available = models.BooleanField(
+        default=True,
+        verbose_name=_('Availability Status'),
+        help_text=_('Controls whether the badge is displayed')
+    )
     badge = models.CharField(max_length=100, default="", blank=True)
     name = models.CharField(max_length=100, default="", blank=True)
     title = models.CharField(max_length=100, default="", blank=True)
@@ -41,6 +48,7 @@ class Profile(models.Model):
         indexes = [
             models.Index(fields=['users']),
             models.Index(fields=['badge']),
+            models.Index(fields=['is_available']),
         ]
 
 
