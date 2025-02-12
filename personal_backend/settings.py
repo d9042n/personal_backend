@@ -3,7 +3,7 @@ Django settings for personal_backend project.
 
 This file is organized into logical sections:
 1. Core Django Settings
-2. Database Configuration
+2. Database Configuration 
 3. Security Settings
 4. Authentication & Authorization
 5. API & DRF Settings
@@ -22,35 +22,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-###################
-# CORE SETTINGS   #
-###################
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# =========================================
+# 1. CORE DJANGO SETTINGS
+# =========================================
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
-#########################
-# DOMAIN SETTINGS       #
-#########################
-
-# Add this new section for domain configuration
-DOMAIN = os.getenv('DOMAIN', 'd9042n.tech')
-ADMIN_DOMAIN = f'admin.personal.{DOMAIN}'
-API_DOMAIN = f'api.personal.{DOMAIN}'
-
-# Update ALLOWED_HOSTS to use domain variables
-ALLOWED_HOSTS = [
-    ADMIN_DOMAIN,
-    API_DOMAIN,
-    'localhost',
-    '127.0.0.1',
-]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -60,21 +38,21 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
+    
     # Third party apps
     "rest_framework",
     "corsheaders",
     "channels",
     "drf_yasg",
-
+    
     # Local apps
     'users',
     'notifications',
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",  # Security middleware first
-    "corsheaders.middleware.CorsMiddleware",  # CORS before CommonMiddleware
+    "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -84,27 +62,11 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "personal_backend.urls"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
-]
-
-#########################
-# DATABASE SETTINGS     #
-#########################
-
+# =========================================
+# 2. DATABASE CONFIGURATION
+# =========================================
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -116,31 +78,27 @@ DATABASES = {
     }
 }
 
-#########################
-# SECURITY SETTINGS     #
-#########################
-
-# SSL/HTTPS Settings
+# =========================================
+# 3. SECURITY SETTINGS
+# =========================================
+# SSL/HTTPS
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Security Headers
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'SAMEORIGIN'  # Changed from 'DENY' to allow admin site to work
-
-# HSTS Settings
+# HSTS settings
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# Referrer Policy - Updated for admin compatibility
-SECURE_REFERRER_POLICY = 'same-origin'
+# Security headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin' if not DEBUG else 'same-origin'
 
-#################################
-# AUTHENTICATION & PERMISSIONS  #
-#################################
-
+# =========================================
+# 4. AUTHENTICATION & AUTHORIZATION
+# =========================================
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -159,12 +117,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# API Authentication
-API_REQUIRE_AUTH = os.getenv('API_REQUIRE_AUTH', 'True').lower() == 'true'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_REQUIRED = True
 
-#########################
-# API & DRF SETTINGS    #
-#########################
+# =========================================
+# 5. API & DRF SETTINGS
+# =========================================
+API_REQUIRE_AUTH = os.getenv('API_REQUIRE_AUTH', 'True').lower() == 'true'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -187,10 +146,10 @@ REST_FRAMEWORK = {
     }
 }
 
-#########################
-# CORS CONFIGURATION    #
-#########################
-
+# =========================================
+# 6. CORS & CSRF CONFIGURATION
+# =========================================
+# CORS settings
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
@@ -208,59 +167,48 @@ CORS_ALLOW_HEADERS = [
 CORS_EXPOSE_HEADERS = ['content-type', 'x-csrftoken']
 CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
+CSRF_COOKIE_NAME = '__Secure-csrftoken' if not DEBUG else 'csrftoken'
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Development-specific settings
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 
-#########################
-# CSRF CONFIGURATION    #
-#########################
-
-CSRF_COOKIE_DOMAIN = f'.personal.{DOMAIN}'  # Allow sharing between subdomains
-CSRF_TRUSTED_ORIGINS = [
-    f'https://{ADMIN_DOMAIN}',
-    f'https://{API_DOMAIN}',
-    f'https://{DOMAIN}',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
-CSRF_COOKIE_NAME = '__Secure-csrftoken' if not DEBUG else 'csrftoken'
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = not DEBUG
-CSRF_USE_SESSIONS = True
-CSRF_COOKIE_HTTPONLY = False  # Changed to False for admin site compatibility
-
-#########################
-# SESSION SETTINGS      #
-#########################
-
-SESSION_COOKIE_DOMAIN = f'.personal.{DOMAIN}'  # Match CSRF domain
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_NAME = '__Secure-sessionid' if not DEBUG else 'sessionid'
+# =========================================
+# 7. CACHE & SESSIONS
+# =========================================
+# Session settings
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
+SESSION_COOKIE_NAME = '__Secure-sessionid' if not DEBUG else 'sessionid'
 
-#########################
-# FILE HANDLING         #
-#########################
-
+# =========================================
+# 8. FILE HANDLING
+# =========================================
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-#########################
-# INTERNATIONALIZATION  #
-#########################
-
+# =========================================
+# 9. INTERNATIONALIZATION
+# =========================================
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-#########################
-# CHANNELS & WEBSOCKET  #
-#########################
-
+# =========================================
+# 10. CHANNELS & WEBSOCKET
+# =========================================
 ASGI_APPLICATION = 'personal_backend.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -271,16 +219,3 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-#########################
-# EMAIL SETTINGS        #
-#########################
-
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-ACCOUNT_EMAIL_REQUIRED = True
-
-#########################
-# MISC SETTINGS         #
-#########################
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
