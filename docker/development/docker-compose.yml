@@ -27,6 +27,13 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: postgres:15-alpine
@@ -46,11 +53,17 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
     networks:
       - backend
     healthcheck:
@@ -63,6 +76,12 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   backend:
@@ -70,6 +89,8 @@ networks:
 
 volumes:
   postgres_data_dev:
+    driver: local
+  redis_data_dev:
     driver: local
   python-packages:
     driver: local

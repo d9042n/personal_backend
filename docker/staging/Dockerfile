@@ -72,7 +72,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-# Run gunicorn with proper settings for staging
+# Run gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", \
     "--workers", "2", \
     "--threads", "2", \
@@ -80,4 +80,6 @@ CMD ["gunicorn", "--bind", "0.0.0.0:8000", \
     "--worker-tmp-dir", "/dev/shm", \
     "--access-logfile", "-", \
     "--error-logfile", "-", \
+    "--log-level", "info", \
+    "--timeout", "60", \
     "personal_backend.wsgi:application"] 

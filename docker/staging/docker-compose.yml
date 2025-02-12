@@ -19,22 +19,25 @@ services:
     networks:
       - backend
     deploy:
-      replicas: 2
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
       resources:
         limits:
-          cpus: "0.75"
+          cpus: "1.0"
           memory: 1G
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/media
 
   db:
     image: postgres:15-alpine
@@ -54,6 +57,12 @@ services:
         limits:
           cpus: "0.75"
           memory: 1G
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -71,6 +80,7 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
     logging:
       driver: "json-file"
       options:
@@ -86,4 +96,8 @@ volumes:
   postgres_data_staging:
     driver: local
   redis_data_staging:
+    driver: local
+  static_files:
+    driver: local
+  media_files:
     driver: local
