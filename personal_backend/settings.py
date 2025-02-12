@@ -35,7 +35,22 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+#########################
+# DOMAIN SETTINGS       #
+#########################
+
+# Add this new section for domain configuration
+DOMAIN = os.getenv('DOMAIN', 'd9042n.tech')
+ADMIN_DOMAIN = f'admin.personal.{DOMAIN}'
+API_DOMAIN = f'api.personal.{DOMAIN}'
+
+# Update ALLOWED_HOSTS to use domain variables
+ALLOWED_HOSTS = [
+    ADMIN_DOMAIN,
+    API_DOMAIN,
+    'localhost',
+    '127.0.0.1',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -112,15 +127,15 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Security Headers
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+X_FRAME_OPTIONS = 'SAMEORIGIN'  # Changed from 'DENY' to allow admin site to work
 
 # HSTS Settings
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# Referrer Policy
-SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin' if not DEBUG else 'same-origin'
+# Referrer Policy - Updated for admin compatibility
+SECURE_REFERRER_POLICY = 'same-origin'
 
 #################################
 # AUTHENTICATION & PERMISSIONS  #
@@ -200,23 +215,29 @@ if DEBUG:
 # CSRF CONFIGURATION    #
 #########################
 
-CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+CSRF_COOKIE_DOMAIN = f'.personal.{DOMAIN}'  # Allow sharing between subdomains
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{ADMIN_DOMAIN}',
+    f'https://{API_DOMAIN}',
+    f'https://{DOMAIN}',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
 CSRF_COOKIE_NAME = '__Secure-csrftoken' if not DEBUG else 'csrftoken'
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_USE_SESSIONS = True
-CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # Changed to False for admin site compatibility
 
 #########################
 # SESSION SETTINGS      #
 #########################
 
-SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_DOMAIN = f'.personal.{DOMAIN}'  # Match CSRF domain
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
 SESSION_COOKIE_NAME = '__Secure-sessionid' if not DEBUG else 'sessionid'
 SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
 
 #########################
 # FILE HANDLING         #
