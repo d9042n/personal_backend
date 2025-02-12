@@ -91,6 +91,7 @@ networks:
   backend:
     driver: bridge
     internal: true
+    name: production_network
 
 volumes:
   postgres_data_prod:

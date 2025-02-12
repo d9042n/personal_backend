@@ -1,296 +1,143 @@
-# 💻 Development Environment Guide
+# 💻 Local Development Guide
 
-Complete guide for setting up the local development environment for the Personal Backend project.
+Quick guide to start developing the Personal Backend project locally.
 
-## 📋 Table of Contents
+## 🚀 Quick Start
 
-- [Prerequisites](#-prerequisites)
-- [Initial Setup](#-initial-setup)
-- [Configuration](#-configuration)
-- [Development Server](#-development-server)
-- [Development Tools](#-development-tools)
-- [Testing](#-testing)
-- [Debugging](#-debugging)
-- [Troubleshooting](#-troubleshooting)
-
-## 🔧 Prerequisites
-
-- Docker Engine 20.10+
-- Docker Compose 2.20+
-- Git
-- Make (optional, but recommended)
-- 1GB RAM minimum
-- 5GB disk space
-
-## 📝 Initial Setup
-
-### 1. Clone Repository
+1. **Setup Project**
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/yourusername/personal-backend.git
 cd personal-backend
-```
 
-### 2. Create Development Directories
-
-```bash
-# Create required directories
-mkdir -p ./data/dev/{static,media,postgres,redis}
-mkdir -p ./logs/dev
-
-# Set permissions
-chmod 755 ./data/dev/{static,media,postgres,redis}
-chmod 755 ./logs/dev
-```
-
-## ⚙️ Configuration
-
-### 1. Environment Setup
-
-```bash
-# Create development env file
+# Copy environment file
 cp .env.example .env.development
 ```
 
-Edit `.env.development`:
+2. **Configure Environment**
+   Edit `.env.development`:
 
 ```env
-# Django Settings
 DEBUG=True
-SECRET_KEY=your-dev-secret-key
+SECRET_KEY=dev-secret-key
 ALLOWED_HOSTS=localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=http://localhost:3000
 
-# Database Settings
+# Database
 DB_NAME=personal
 DB_USER=personal
 DB_PASSWORD=devpassword
 DB_HOST=db
 DB_PORT=5432
 
-# Redis Settings
+# Redis
 REDIS_HOST=redis
 REDIS_PORT=6379
-
-# Additional Required Settings
-POSTGRES_DB=personal
-POSTGRES_USER=personal
-POSTGRES_PASSWORD=devpassword
 ```
 
-## 🚀 Development Server
-
-### 1. Start Development Environment
+3. **Start Development**
 
 ```bash
-# Build images
-make development-build
-
-# Start services
+# Start all services
 make development-up
 
-# View logs
-make development-logs
-```
-
-### 2. Initialize Database
-
-```bash
 # Run migrations
 make development-migrate
 
-# Create superuser
+# Create admin user (optional)
 make development-createsuperuser
 ```
 
-## 🛠 Development Tools
+4. **Access Your Project**
 
-### Django Management
+- Main: http://localhost:8002
+- Admin: http://localhost:8002/admin
+- API Docs: http://localhost:8002/api/docs
 
-```bash
-# Django shell
-make development-shell
+## 📝 Development Commands
 
-# Create new migrations
-make development-makemigrations
-
-# Apply migrations
-make development-migrate
-```
-
-### Database Access
+### Daily Use
 
 ```bash
-# Check database status
-make development-db-status
+# Start/Stop
+make development-up      # Start services
+make development-down    # Stop services
+make development-logs    # View logs
 
-# View connections
-make development-db-connections
+# Database
+make development-migrate         # Apply migrations
+make development-makemigrations  # Create migrations
+make development-shell          # Django shell
 
-# Direct database access
-docker compose -f docker/development/docker-compose.yml exec db psql -U personal
+# Testing
+make test               # Run tests
 ```
 
-## 🧪 Testing
+### Database Connection
 
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run with coverage
-make test-coverage
-```
-
-### Test Database
-
-```bash
-# Access test database
-docker compose -f docker/development/docker-compose.yml exec db psql -U personal personal_test
-```
-
-## 🔍 Monitoring
-
-### Health Checks
-
-```bash
-# Check service health
-make development-health
-
-# Check volumes
-make development-check-volumes
-
-# Monitor resources
-make development-check-resources
-```
-
-### Logs
-
-```bash
-# View all logs
-make development-logs
-
-# Follow specific service logs
-docker compose -f docker/development/docker-compose.yml logs -f backend
-docker compose -f docker/development/docker-compose.yml logs -f db
-```
-
-## 🐛 Debugging
-
-### Django Debug Toolbar
-
-- Available at http://localhost:8000/debug/
-- SQL query analysis
-- Request/response information
-- Cache statistics
-
-### Hot Reload
-
-Code changes are automatically detected for:
-
-- Python files
-- Templates
-- Static files
-
-### VS Code Debugging
-
-1. Install Python extension
-2. Add configuration:
-
-```json
-{
-  "name": "Django Docker",
-  "type": "python",
-  "request": "attach",
-  "port": 5678,
-  "host": "localhost",
-  "pathMappings": [
-    {
-      "localRoot": "${workspaceFolder}",
-      "remoteRoot": "/app"
+```python
+DATABASES = {
+    'default': {
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'NAME': 'personal',
+        'USER': 'personal',
+        'PASSWORD': 'devpassword',
     }
-  ]
 }
 ```
 
-## 🔧 Resource Limits
+## 🔄 Development Features
 
-Development environment uses minimal resources:
+### Auto-Reload
 
-```yaml
-Backend:
-  CPU: 0.50
-  Memory: 512M
+- Python code changes reload automatically
+- Templates update on refresh
+- Static files served automatically
 
-Database:
-  CPU: 0.50
-  Memory: 512M
+### Debugging
 
-Redis:
-  CPU: 0.50
-  Memory: 512M
-```
+- Django Debug Toolbar at /debug/
+- Python debugger enabled
+- Full error pages
 
-## 🔍 Troubleshooting
+### Local Services
 
-### Common Issues
+- Database: PostgreSQL at localhost:5432
+- Redis: localhost:6379
+- Backend: localhost:8002
 
-1. **Port Conflicts**
+## ❗ Common Issues
 
-```bash
-# Check ports in use
-sudo lsof -i :8000
-sudo lsof -i :5432
-
-# Change ports in docker-compose.yml if needed
-```
-
-2. **Database Issues**
+### Port Already in Use
 
 ```bash
-# Reset database
-docker compose -f docker/development/docker-compose.yml down -v
+# Check ports
+sudo lsof -i :8002    # Backend
+sudo lsof -i :5432    # Database
+sudo lsof -i :6379    # Redis
+
+# Stop services
+make development-down
+```
+
+### Database Reset
+
+```bash
+# Full reset
+make development-down
+rm -rf ./data/dev/postgres/*
 make development-up
 make development-migrate
 ```
 
-3. **Permission Issues**
+### Cache Clear
 
 ```bash
-# Fix permissions
-sudo chown -R $USER:$USER ./data/dev
-sudo chmod -R 755 ./data/dev
+# Clear Redis
+make development-shell
+>>> from django.core.cache import cache
+>>> cache.clear()
 ```
 
-4. **Cache Issues**
-
-```bash
-# Clear Redis cache
-docker compose -f docker/development/docker-compose.yml exec redis redis-cli FLUSHALL
-```
-
-## 📚 Development Best Practices
-
-1. **Code Quality**
-
-   - Run tests before committing
-   - Use black for formatting
-   - Follow PEP 8 guidelines
-
-2. **Database**
-
-   - Use migrations for schema changes
-   - Don't modify production data in development
-
-3. **Security**
-
-   - Never commit .env files
-   - Use development-specific credentials
-   - Keep DEBUG=True only in development
-
-4. **Performance**
-   - Monitor query performance
-   - Use Django Debug Toolbar
-   - Profile slow operations
+Need help? Check our [Contributing Guide](../../CONTRIBUTING.md) or ask the team!

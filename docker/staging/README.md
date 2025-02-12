@@ -1,284 +1,154 @@
-# 🚀 Staging Deployment Guide
+# 🚀 Staging Environment Guide
 
-Complete guide for deploying the Personal Backend project in staging environment.
+Guide for deploying and testing in the staging environment.
 
-## 📋 Table of Contents
+## 📋 Overview
 
-- [Prerequisites](#-prerequisites)
-- [Initial Setup](#-initial-setup)
-- [Configuration](#-configuration)
-- [Deployment](#-deployment)
-- [Post-Deployment](#-post-deployment)
-- [Maintenance](#-maintenance)
-- [Monitoring](#-monitoring)
-- [Backup & Recovery](#-backup--recovery)
-- [Troubleshooting](#-troubleshooting)
+- Port: `8001` (http://localhost:8001)
+- Purpose: Pre-production testing and QA
+- Resources: 1.0 CPU, 1GB RAM
+- Debug: Disabled
+- Security: Similar to production
 
-## 🔧 Prerequisites
+## 🚀 Deployment
 
-- Docker Engine 20.10+
-- Docker Compose 2.20+
-- 2GB RAM minimum
-- 10GB disk space
-- Staging domain (optional)
-- Nginx reverse proxy configured
-
-## 📝 Initial Setup
-
-### 1. Create Required Directories
+1. **Setup Environment**
 
 ```bash
-# Create project structure
-mkdir -p /opt/personal-backend-staging/{data,backups,logs}
-cd /opt/personal-backend-staging
-
-# Create data subdirectories
-mkdir -p data/{static,media,postgres,redis}
-
-# Set permissions
-chmod 755 data/{static,media,postgres,redis}
-chmod 755 {backups,logs}
-```
-
-### 2. Clone Repository
-
-```bash
-git clone https://github.com/yourusername/personal-backend.git
-cd personal-backend
-```
-
-## ⚙️ Configuration
-
-### 1. Environment Setup
-
-```bash
-# Create staging env file
+# Copy staging env file
 cp .env.example .env.staging
+
+# Edit configuration
+nano .env.staging
 ```
 
-Edit `.env.staging`:
+2. **Configure Settings**
 
 ```env
-# Django Settings
 DEBUG=False
-SECRET_KEY=your-staging-secret-key
-ALLOWED_HOSTS=staging.your-domain.com,localhost
-CORS_ALLOWED_ORIGINS=https://staging.your-domain.com
+SECRET_KEY=staging-secret-key
+ALLOWED_HOSTS=staging.domain.com,localhost
 
-# Database Settings
+# Database
 DB_NAME=personal_staging
 DB_USER=personal_staging
 DB_PASSWORD=staging-password
 DB_HOST=db
 DB_PORT=5432
 
-# Redis Settings
+# Redis
 REDIS_HOST=redis
 REDIS_PORT=6379
-
-# Security Settings
-SECURE_SSL_REDIRECT=True
-SESSION_COOKIE_SECURE=True
-CSRF_COOKIE_SECURE=True
-
-# Additional Required Settings
-POSTGRES_DB=personal_staging
-POSTGRES_USER=personal_staging
-POSTGRES_PASSWORD=staging-password
 ```
 
-## 🚀 Deployment
-
-### 1. Build and Start Services
+3. **Deploy Services**
 
 ```bash
-# Build images
+# Build and start
 make staging-build
-
-# Start services
 make staging-up
 
-# Verify services are running
-make staging-ps
-```
-
-### 2. Initialize Database
-
-```bash
-# Run migrations
+# Initialize
 make staging-migrate
-
-# Create superuser
-docker compose -f docker/staging/docker-compose.yml exec backend python manage.py createsuperuser
-```
-
-### 3. Static Files
-
-```bash
-# Collect static files
 make staging-collectstatic
 ```
 
-## ✅ Post-Deployment
+## 📝 Common Tasks
 
-### 1. Verify Deployment
+### Service Management
 
 ```bash
-# Check service health
+# Check status
 make staging-health
 
-# Test endpoints
-curl http://localhost:8000/health/
-```
-
-### 2. Monitor Logs
-
-```bash
-# View all logs
+# View logs
 make staging-logs
 
-# View specific service logs
-make staging-logs-backend
-make staging-logs-db
-make staging-logs-redis
+# Restart services
+docker compose -f docker/staging/docker-compose.yml restart
 ```
 
-## 🛠 Maintenance
-
-### Regular Updates
-
-```bash
-# Pull latest changes
-git pull origin develop
-
-# Rebuild and restart
-make staging-build
-make staging-up
-
-# Run migrations if needed
-make staging-migrate
-```
-
-### Database Maintenance
+### Database Operations
 
 ```bash
 # Create backup
 make staging-backup-volumes
 
-# Check database status
+# Check status
 make staging-db-status
+```
+
+## 🔍 Testing Guide
+
+### 1. API Testing
+
+```bash
+# Health check
+curl http://localhost:8001/health/
+
+# API endpoints
+curl http://localhost:8001/api/v1/...
+```
+
+### 2. Performance Testing
+
+```bash
+# Monitor resources
+make staging-check-resources
+
+# Check DB connections
+make staging-db-connections
+```
+
+### 3. Security Testing
+
+- SSL/TLS configuration
+- Authentication flows
+- API rate limiting
+- CORS settings
+
+## ❗ Troubleshooting
+
+### Service Issues
+
+```bash
+# Check service health
+make staging-health
+
+# View detailed logs
+make staging-logs
+```
+
+### Database Issues
+
+```bash
+# Check DB status
+make staging-db-status
+
+# View DB logs
+docker compose -f docker/staging/docker-compose.yml logs db
+```
+
+### Volume Issues
+
+```bash
+# Check permissions
+make staging-check-volumes
 ```
 
 ## 📊 Monitoring
 
-### Health Checks
+### Health Metrics
 
-```bash
-# Check all services
-make staging-health
+- Service status
+- Response times
+- Error rates
+- Resource usage
 
-# Check volumes
-make staging-check-volumes
+### Database Metrics
 
-# Monitor resources
-make staging-check-resources
-```
+- Connection count
+- Query performance
+- Cache hit rates
 
-### Performance Monitoring
-
-```bash
-# Check database connections
-make staging-db-connections
-
-# View resource usage
-docker stats
-```
-
-## 💾 Backup & Recovery
-
-### Automated Backups
-
-```bash
-# Volume backups
-make staging-backup-volumes
-```
-
-### Recovery
-
-```bash
-# Restore volumes
-docker run --rm -v backup.tar.gz:/backup -v volume_name:/data alpine tar xzf /backup
-```
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-1. **Service Won't Start**
-
-```bash
-# Using Make (Recommended)
-make staging-health
-
-# Manual checks
-docker compose -f docker/staging/docker-compose.yml ps
-docker compose -f docker/staging/docker-compose.yml logs
-```
-
-2. **Database Connection Issues**
-
-```bash
-# Using Make (Recommended)
-make staging-db-status
-make staging-db-connections
-
-# Manual checks
-docker compose -f docker/staging/docker-compose.yml logs db
-docker compose -f docker/staging/docker-compose.yml exec db pg_isready -U personal_staging
-```
-
-3. **Volume Permission Issues**
-
-```bash
-# Using Make (Recommended)
-make staging-check-volumes
-
-# Manual checks
-docker compose -f docker/staging/docker-compose.yml exec backend ls -la /app/staticfiles
-docker compose -f docker/staging/docker-compose.yml exec backend ls -la /app/media
-```
-
-## 📈 Performance Tuning
-
-### Resource Allocation
-
-```yaml
-Backend:
-  CPU: 1.0
-  Memory: 1G
-
-Database:
-  CPU: 0.75
-  Memory: 1G
-
-Redis:
-  CPU: 0.50
-  Memory: 512M
-```
-
-### Gunicorn Settings
-
-- Workers: `2` (half of production)
-- Threads: `2`
-- Worker Class: `gthread`
-- Timeout: `60` seconds
-
-### Database Optimization
-
-```bash
-# Check current connections
-make staging-db-status
-
-# Monitor query performance
-make staging-db-connections
-```
+Need help? Contact the DevOps team.
