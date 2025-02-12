@@ -22,6 +22,7 @@ from django.urls import path, include, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from django.http import HttpResponse
 
 # Add schema view configuration
 schema_view = get_schema_view(
@@ -44,6 +45,10 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+# Add a simple health check view
+def health_check(request):
+    return HttpResponse("ok", status=200)
+
 urlpatterns = [
                   path("admin/", admin.site.urls),
                   path('api-auth/', include('rest_framework.urls')),
@@ -55,4 +60,5 @@ urlpatterns = [
                           name='schema-json'),
                   re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
                   re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+                  path('health/', health_check, name='health-check'),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

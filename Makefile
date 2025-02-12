@@ -151,7 +151,9 @@ production-check-volumes:
 	@echo "Checking volume permissions..."
 	docker compose -f docker/production/docker-compose.yml exec backend ls -la /app/staticfiles
 	docker compose -f docker/production/docker-compose.yml exec backend ls -la /app/media
-	docker compose -f docker/production/docker-compose.yml exec db ls -la /var/lib/postgresql/data
+	@echo "Checking host volume permissions..."
+	ls -la /var/www/personal/static
+	ls -la /var/www/personal/media
 
 production-check-resources:
 	docker stats --no-stream
