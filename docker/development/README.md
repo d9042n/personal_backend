@@ -1,6 +1,6 @@
-# 💻 Local Development Guide
+# 🐳 Local Development Guide
 
-Quick guide to start developing the Personal Backend project locally.
+This guide explains how to run the Personal Backend project in a local development environment using Docker.
 
 ## 🚀 Quick Start
 
@@ -16,7 +16,7 @@ cp .env.example .env.development
 ```
 
 2. **Configure Environment**
-   Edit `.env.development`:
+   Edit `.env.development` with these required variables:
 
 ```env
 DEBUG=True
@@ -38,106 +38,182 @@ REDIS_PORT=6379
 3. **Start Development**
 
 ```bash
-# Start all services
+# Using Make (recommended)
+make development-up-d
+
+# Or using Docker Compose directly
+docker compose -f docker/development/docker-compose.yml up -d
+```
+
+4. **Access Services**
+
+- Backend API: http://localhost:8002
+- Database: localhost:5434
+- Redis: localhost:6381
+
+## 🛠 Development Environment
+
+### Container Services
+
+| Service | Description                    | Port Mapping | Resource Limits      |
+| ------- | ------------------------------ | ------------ | -------------------- |
+| backend | Python 3.11 Django application | 8002 -> 8000 | CPU: 0.5, RAM: 512MB |
+| db      | PostgreSQL 15                  | 5434 -> 5432 | CPU: 0.5, RAM: 512MB |
+| redis   | Redis 7                        | 6381 -> 6379 | CPU: 0.5, RAM: 512MB |
+
+### Volume Mounts
+
+- Application code: `../../:/app:cached`
+- Python packages: `python-packages:/usr/local/lib/python3.11/site-packages/`
+- Postgres data: `postgres_data_dev:/var/lib/postgresql/data`
+- Redis data: `redis_data_dev:/data`
+
+## 📝 Common Commands
+
+### Basic Operations
+
+```bash
+# Build services
+make development-build
+# or: docker compose -f docker/development/docker-compose.yml build
+
+# Start services (attached)
 make development-up
+# or: docker compose -f docker/development/docker-compose.yml up
+
+# Start services (detached)
+make development-up-d
+# or: docker compose -f docker/development/docker-compose.yml up -d
+
+# Stop services
+make development-down
+# or: docker compose -f docker/development/docker-compose.yml down
+
+# View logs
+make development-logs
+# or: docker compose -f docker/development/docker-compose.yml logs -f
+```
+
+### Development Commands
+
+```bash
+# Access Django shell
+make development-shell
+# or: docker compose -f docker/development/docker-compose.yml exec backend python manage.py shell
 
 # Run migrations
 make development-migrate
+# or: docker compose -f docker/development/docker-compose.yml exec backend python manage.py migrate
 
-# Create admin user (optional)
+# Create migrations
+make development-makemigrations
+# or: docker compose -f docker/development/docker-compose.yml exec backend python manage.py makemigrations
+
+# Create superuser
 make development-createsuperuser
+# or: docker compose -f docker/development/docker-compose.yml exec backend python manage.py createsuperuser
 ```
 
-4. **Access Your Project**
-
-- Main: http://localhost:8002
-- Admin: http://localhost:8002/admin
-- API Docs: http://localhost:8002/api/docs
-
-## 📝 Development Commands
-
-### Daily Use
+### Monitoring Commands
 
 ```bash
-# Start/Stop
-make development-up      # Start services
-make development-down    # Stop services
-make development-logs    # View logs
+# Check health status
+make development-health
+# or: docker compose -f docker/development/docker-compose.yml ps && curl -s http://localhost:8000/health/
 
-# Database
-make development-migrate         # Apply migrations
-make development-makemigrations  # Create migrations
-make development-shell          # Django shell
+# Check volume permissions
+make development-check-volumes
+# or: docker compose -f docker/development/docker-compose.yml exec backend ls -la /app
 
-# Testing
-make test               # Run tests
-```
+# Monitor resource usage
+make development-check-resources
+# or: docker stats --no-stream
 
-### Database Connection
-
-```python
-DATABASES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': '5432',
-        'NAME': 'personal',
-        'USER': 'personal',
-        'PASSWORD': 'devpassword',
-    }
-}
+# Check database status
+make development-db-status
+# or: docker compose -f docker/development/docker-compose.yml exec db psql -U personal -c "SELECT count(*) FROM pg_stat_activity;"
 ```
 
 ## 🔄 Development Features
 
 ### Auto-Reload
 
-- Python code changes reload automatically
-- Templates update on refresh
-- Static files served automatically
+The development server automatically reloads when Python code changes are detected.
 
-### Debugging
+### Health Checks
 
-- Django Debug Toolbar at /debug/
-- Python debugger enabled
-- Full error pages
+- Backend: Checks `/health/` endpoint every 30s
+- Database: Checks PostgreSQL readiness every 10s
+- Redis: Checks connection every 10s
 
-### Local Services
+### Resource Management
 
-- Database: PostgreSQL at localhost:5432
-- Redis: localhost:6379
-- Backend: localhost:8002
+All services have resource limits configured:
 
-## ❗ Common Issues
+- CPU: 0.5 cores
+- Memory: 512MB
 
-### Port Already in Use
+## ❗ Troubleshooting
+
+### Port Conflicts
+
+If you see port binding errors, check if these ports are available:
+
+- 8002 (Backend)
+- 5434 (PostgreSQL)
+- 6381 (Redis)
 
 ```bash
-# Check ports
-sudo lsof -i :8002    # Backend
-sudo lsof -i :5432    # Database
-sudo lsof -i :6379    # Redis
-
-# Stop services
-make development-down
+# Check ports on Linux/MacOS
+sudo lsof -i :8002
+sudo lsof -i :5434
+sudo lsof -i :6381
 ```
 
 ### Database Reset
 
 ```bash
-# Full reset
+# Using Make
 make development-down
-rm -rf ./data/dev/postgres/*
-make development-up
+docker volume rm development_postgres_data_dev
+make development-up-d
 make development-migrate
+
+# Or using Docker Compose directly
+docker compose -f docker/development/docker-compose.yml down
+docker volume rm development_postgres_data_dev
+docker compose -f docker/development/docker-compose.yml up -d
+docker compose -f docker/development/docker-compose.yml exec backend python manage.py migrate
 ```
 
-### Cache Clear
+### Logs
 
 ```bash
-# Clear Redis
-make development-shell
->>> from django.core.cache import cache
->>> cache.clear()
+# Using Make
+make development-logs
+
+# Or specific service logs using Docker Compose
+docker compose -f docker/development/docker-compose.yml logs backend
+docker compose -f docker/development/docker-compose.yml logs db
+docker compose -f docker/development/docker-compose.yml logs redis
 ```
 
-Need help? Check our [Contributing Guide](../../CONTRIBUTING.md) or ask the team!
+### Container Shell Access
+
+```bash
+# Backend container
+make development-shell
+# or: docker compose -f docker/development/docker-compose.yml exec backend bash
+
+# Database container
+docker compose -f docker/development/docker-compose.yml exec db psql -U personal
+```
+
+## 📚 Additional Notes
+
+- All services are configured to restart automatically unless stopped manually
+- Log rotation is enabled for database and redis (max 3 files of 10MB each)
+- The backend container runs as a non-root user for security
+- Python dependencies are built in a separate stage to keep the final image small
+
+Need help? Check our [Contributing Guide](../../CONTRIBUTING.md) or reach out to the team!
