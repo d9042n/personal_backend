@@ -19,16 +19,11 @@ services:
     networks:
       - backend
     deploy:
-      replicas: 3
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
       resources:
         limits:
-          cpus: "0.75"
-          memory: 1G
+          cpus: "2.0"
+          memory: 2G
+    restart: unless-stopped
     logging:
       driver: "json-file"
       options:
@@ -40,6 +35,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    environment:
+      - DJANGO_SETTINGS_MODULE=personal_backend.settings
+    volumes:
+      - static_files:/app/staticfiles:rw
+      - media_files:/app/media:rw
 
   db:
     image: postgres:15-alpine
@@ -50,20 +50,24 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U personal_production"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
           cpus: "1.0"
           memory: 2G
+    restart: unless-stopped
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
@@ -76,30 +80,43 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
     deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
       resources:
         limits:
           cpus: "1.0"
           memory: 1G
+    restart: unless-stopped
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    ports:
+      - "6379:6379"
 
 networks:
   backend:
     driver: bridge
-    internal: true
+    internal: false
+    name: production_network
 
 volumes:
   postgres_data_prod:
     driver: local
+    name: personal_postgres_prod
   redis_data_prod:
     driver: local
+    name: personal_redis_prod
+  static_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/www/personal/static
+  media_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/www/personal/media

@@ -39,6 +39,7 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libpq5 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder
@@ -46,13 +47,16 @@ COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
 
 # Install Python packages
-RUN pip install --no-cache /wheels/*
-
-# Copy project files
-COPY --chown=django:django . .
+RUN pip install --no-cache /wheels/* \
+    && rm -rf /wheels \
+    && rm -rf /root/.cache/pip/*
 
 # Switch to non-root user
 USER django
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
 
 # Run development server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 

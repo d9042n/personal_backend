@@ -9,10 +9,10 @@ services:
         - ENVIRONMENT=development
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ../../:/app
+      - ../../:/app:cached
       - python-packages:/usr/local/lib/python3.11/site-packages/
     ports:
-      - "8000:8000"
+      - "8002:8000"
     env_file:
       - ../../.env.development
     depends_on:
@@ -27,6 +27,13 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: postgres:15-alpine
@@ -46,11 +53,19 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "5434:5432"
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
     networks:
       - backend
     healthcheck:
@@ -63,6 +78,14 @@ services:
         limits:
           cpus: "0.50"
           memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "6381:6379"
 
 networks:
   backend:
@@ -70,6 +93,8 @@ networks:
 
 volumes:
   postgres_data_dev:
+    driver: local
+  redis_data_dev:
     driver: local
   python-packages:
     driver: local
