@@ -1,29 +1,108 @@
-# 🌟 User Profile API
+# 👤 Users Service
 
-A clean, RESTful API for user profile management with a focus on simplicity and security.
+A comprehensive user management system providing profile management, authentication, and real-time updates through a RESTful API.
 
-## 🎯 Core Features
+## 📋 Table of Contents
 
-- 🔓 Public profile viewing & registration
-- 👤 User management
-- ✏️ Profile customization
-- 🔒 Secure authentication
-- 🔗 Social media integration
-- 📱 Real-time updates
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Models](#-models)
+- [API Reference](#-api-reference)
+- [Authentication](#-authentication)
+- [Validation](#-validation)
+- [Integration](#-integration)
+- [Development](#-development)
+- [Testing](#-testing)
 
-## 📚 API Documentation
+## ✨ Features
 
-### Public Endpoints (No Authentication Required)
+- 🔐 Secure user authentication
+- 👤 Extensible user profiles
+- 🌐 Social media integration
+- 🔄 Real-time profile updates
+- 🛡️ Role-based access control
+- 📊 Advanced data validation
+- 🔍 Optimized database queries
+- 📱 WebSocket notifications
+- 🌍 Public/private profile separation
 
-#### View Public Profile
+## 🏗 Architecture
+
+### Core Components
+
+1. **Models**
+
+   - `Users`: Extended user information
+   - `Profile`: Professional and social details
+   - Optimized database indexes
+   - Automatic profile creation
+
+2. **Views**
+
+   - Public profile access
+   - Protected user operations
+   - Swagger documentation
+   - Rate limiting
+
+3. **Services**
+
+   - User creation
+   - Profile management
+   - Transaction handling
+
+4. **Validators**
+   - Social media URL validation
+   - Custom field validation
+   - Input sanitization
+
+## 📦 Models
+
+### Users Model
+
+```python
+class Users(models.Model):
+    user = models.OneToOneField(User)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['-created_at']),
+        ]
+```
+
+### Profile Model
+
+```python
+class Profile(models.Model):
+    users = models.OneToOneField(Users)
+    is_available = models.BooleanField(default=True)
+    badge = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    github = models.URLField(validators=[validate_github_url])
+    linkedin = models.URLField(validators=[validate_linkedin_url])
+    twitter = models.URLField(validators=[validate_twitter_url])
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['users']),
+            models.Index(fields=['badge']),
+            models.Index(fields=['is_available']),
+        ]
+```
+
+## 🔌 API Reference
+
+### Public Endpoints
 
 ```http
 GET /api/public/profile/{username}/
 ```
 
-Returns public profile information for any user.
-
-**Response** `200 OK`
+Returns public profile information:
 
 ```json
 {
@@ -39,153 +118,205 @@ Returns public profile information for any user.
 }
 ```
 
-#### Register New Account
-
 ```http
 POST /api/users/
+```
 
+Register new user account:
+
+```json
 {
-    "username": "newuser",
-    "email": "user@example.com",
-    "password": "secure_password",
-    "users": {
-        "profile": {
-            "is_available": true,
-            "name": "New User",
-            "title": "Developer"
-        }
+  "username": "newuser",
+  "email": "user@example.com",
+  "password": "secure_password",
+  "users": {
+    "profile": {
+      "is_available": true,
+      "name": "New User",
+      "title": "Developer",
+      "description": "Full-stack developer",
+      "github": "https://github.com/newuser",
+      "linkedin": "https://linkedin.com/in/newuser",
+      "twitter": "https://twitter.com/newuser"
     }
+  }
 }
 ```
 
-### Protected Endpoints (Authentication Required\*)
+Response `201 Created`:
 
-\*Note: Authentication requirement controlled by API_REQUIRE_AUTH setting
+```json
+{
+  "id": 1,
+  "username": "newuser",
+  "email": "user@example.com",
+  "users": {
+    "profile": {
+      "is_available": true,
+      "name": "New User",
+      "title": "Developer",
+      "badge": "",
+      "description": "Full-stack developer",
+      "github": "https://github.com/newuser",
+      "linkedin": "https://linkedin.com/in/newuser",
+      "twitter": "https://twitter.com/newuser"
+    },
+    "created_at": "2024-03-15T10:30:00Z",
+    "updated_at": "2024-03-15T10:30:00Z"
+  }
+}
+```
 
-#### View Full Profile
+### Protected Endpoints
 
 ```http
 GET /api/users/{username}/
-```
-
-Returns complete user information including private fields.
-
-#### Update Profile
-
-```http
 PATCH /api/users/{username}/
-
-{
-    "users": {
-        "profile": {
-            "title": "Senior Developer",
-            "badge": "Available"
-        }
-    }
-}
+DELETE /api/users/{username}/
 ```
 
-#### Delete Account
+Notes:
 
-```http
-DELETE /api/users/{username}/
+- Authentication requirement controlled by `API_REQUIRE_AUTH` setting
+- Protected endpoints require authentication when `API_REQUIRE_AUTH=True`
+- Registration endpoint is always public
+- Rate limiting applies to all endpoints
+
+## 🔒 Authentication
+
+### Configuration
+
+```python
+# settings.py
+API_REQUIRE_AUTH = True  # Enable/disable authentication requirement
+```
+
+### Rate Limiting
+
+- Anonymous: 100 requests/day
+- Authenticated: 1000 requests/day
+
+## ✅ Validation
+
+### Social Media URLs
+
+```python
+GITHUB_URL_PATTERN = r'^https?://(?:www\.)?github\.com/[\w-]+/?$'
+LINKEDIN_URL_PATTERN = r'^https?://(?:www\.)?linkedin\.com/in/[\w-]+/?$'
+TWITTER_URL_PATTERN = r'^https?://(?:www\.)?twitter\.com/[\w-]+/?$'
+```
+
+### Profile Badges
+
+```python
+BADGE_CHOICES = [
+    ('available', 'Available for hire'),
+    ('busy', 'Currently busy'),
+    ('offline', 'Not available'),
+]
+```
+
+## 🔌 Integration
+
+### WebSocket Notifications
+
+```python
+@receiver(post_save, sender=Profile)
+def notify_profile_update(sender, instance, created, **kwargs):
+    if not created:
+        NotificationService.create_notification(
+            recipient=instance.users.user,
+            notification_type=NotificationTypes.PROFILE_UPDATE,
+            message='Your profile has been updated',
+            content_object=instance
+        )
+```
+
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Run all user tests
+python manage.py test users
+
+# Run specific test case
+python manage.py test users.tests.UserAPITest
+```
+
+### Test Coverage
+
+```bash
+coverage run manage.py test users
+coverage report
+```
+
+## 🔧 Development
+
+### Creating Users
+
+```python
+from users.services import UserService
+
+user = UserService.create_user(
+    username='johndoe',
+    email='john@example.com',
+    password='secure_password',
+    profile_data={
+        'title': 'Software Developer',
+        'badge': 'available'
+    }
+)
+```
+
+### Updating Profiles
+
+```python
+UserService.update_user_profile(
+    user=user,
+    profile_data={
+        'title': 'Senior Developer',
+        'is_available': True
+    }
+)
 ```
 
 ## 🔒 Security Features
 
-- Public access limited to:
-  - Viewing public profiles (/public/profile/{username}/)
-  - User registration (/users/ POST)
-- Protected operations require:
-  - Authentication (when API_REQUIRE_AUTH is True)
-  - Authorization (can only modify own profile)
-- Rate limiting:
-  - Public endpoints: 100 requests/day
-  - Authenticated users: 1000 requests/day
-- Password security:
-  - Minimum length: 10 characters
-  - Complexity requirements enforced
-  - Hashing using Django's default hasher
-- Email verification required
-- CORS protection enabled
-- XSS protection
-- Content type sniffing protection
-- SSL/HTTPS enforcement in production
+1. **Authentication**
 
-## 🚀 Best Practices
-
-1. **RESTful Design**
-
-   - Clear public/protected endpoint separation
-   - Consistent URL structure (/public/profile/, /users/)
-   - Proper HTTP methods (GET, POST, PATCH, DELETE)
-   - Meaningful status codes
-
-2. **Security First**
-
-   - Secure by default
+   - Configurable API authentication
+   - Role-based access control
    - Rate limiting
+
+2. **Data Protection**
+
    - Input validation
-   - Clear authentication rules
+   - URL sanitization
+   - Field-level permissions
 
-3. **Clean Architecture**
-   - Separation of concerns
-   - Modular design
-   - Clear documentation
-   - Consistent error handling
+3. **Performance**
+   - Optimized queries
+   - Database indexes
+   - Cached responses
 
-## 💻 Development Guide
+## 📚 Additional Resources
 
-1. **Setup Environment**
+- [Django Authentication](https://docs.djangoproject.com/en/stable/topics/auth/)
+- [DRF Permissions](https://www.django-rest-framework.org/api-guide/permissions/)
+- [WebSocket Integration](../notifications/README.md)
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+## 🤝 Contributing
 
-# Run migrations
-python manage.py migrate
+1. Fork the repository
+2. Create your feature branch
+3. Write tests for new features
+4. Submit a pull request
 
-# Create admin user
-python manage.py createsuperuser
-```
+## 📝 License
 
-2. **Run Tests**
-
-```bash
-python manage.py test users
-```
-
-## 🔌 Integration Features
-
-- WebSocket notifications for profile updates
-- Social media URL validation
-- Real-time event handling
-- Extensible profile data
-
-## 📝 API Design Notes
-
-- Clear separation between public and protected endpoints
-- Consistent response formats
-- Comprehensive error handling
-- Rate limiting for security
-- Cached public endpoints
-- Supports partial updates
-
-## 🤝 Related Services
-
-- Integrates with Notification system
-- Supports WebSocket connections
-- Extensible for additional features
-
-## 🔌 Profile Features
-
-- 🎯 Availability Control
-  - Toggle badge visibility with `is_available`
-  - Automatic notification on status change
-  - Real-time frontend updates
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-📖 For detailed API documentation, visit `/swagger/` or `/redoc/`
-
-Made with ❤️ for the Personal Website Project
+Made with ❤️ by the Personal Website Team
