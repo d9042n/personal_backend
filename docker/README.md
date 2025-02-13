@@ -6,155 +6,223 @@ This directory contains Docker configurations for different environments of the 
 
 ```
 docker/
-├── development/         # Development environment
+├── development/        # Development environment
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── README.md
-├── staging/            # Staging environment
+├── staging/           # Staging environment
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── README.md
-├── production/         # Production environment
+├── production/        # Production environment
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── README.md
-└── README.md          # This file
+└── README.md         # This file
 ```
 
-## 📋 Environment Overview
+## 🌐 Environment Specifications
 
-### Development (Local)
+### Development Environment
 
-- Port: `8002` (Backend), `5432` (DB), `6379` (Redis)
-- Purpose: Local development with hot reload
-- Features:
-  - Django development server
-  - Direct database access
-  - Debug mode ON
-  - Volume mounts for live code changes
-  - Resource limits: 0.5 CPU, 512MB RAM per service
+| Component | Specification        | Resource Limits      | Port Mapping |
+| --------- | -------------------- | -------------------- | ------------ |
+| Backend   | Python 3.11 (Django) | CPU: 0.5, RAM: 512MB | 8002 -> 8000 |
+| Database  | PostgreSQL 15        | CPU: 0.5, RAM: 512MB | 5434 -> 5432 |
+| Redis     | Redis 7              | CPU: 0.5, RAM: 512MB | 6381 -> 6379 |
 
-### Staging
+### Staging Environment
 
-- Port: `8001` (Backend only)
-- Purpose: Testing before production
-- Features:
-  - Gunicorn with 2 workers
-  - Debug mode OFF
-  - Resource limits: 1.0 CPU, 1GB RAM for backend
-  - Mimics production with reduced resources
+| Component | Specification          | Resource Limits      | Port Mapping |
+| --------- | ---------------------- | -------------------- | ------------ |
+| Backend   | Python 3.11 (Gunicorn) | CPU: 1.0, RAM: 1GB   | 8001 -> 8000 |
+| Database  | PostgreSQL 15          | CPU: 0.75, RAM: 1GB  | 5433 -> 5432 |
+| Redis     | Redis 7                | CPU: 0.5, RAM: 512MB | 6380 -> 6379 |
 
-### Production
+### Production Environment
 
-- Port: `8000` (Backend only)
-- Purpose: Live deployment
-- Features:
-  - Gunicorn with 4 workers
-  - Debug mode OFF
-  - Resource limits: 2.0 CPU, 2GB RAM for backend
-  - Full security measures
-  - Regular backups
+| Component | Specification          | Resource Limits    | Port Mapping |
+| --------- | ---------------------- | ------------------ | ------------ |
+| Backend   | Python 3.11 (Gunicorn) | CPU: 2.0, RAM: 2GB | 8000 -> 8000 |
+| Database  | PostgreSQL 15          | CPU: 1.0, RAM: 2GB | 5432 -> 5432 |
+| Redis     | Redis 7                | CPU: 1.0, RAM: 1GB | 6379 -> 6379 |
 
 ## 🚀 Quick Start
 
-Choose the appropriate environment:
+### Using Make Commands (Recommended)
 
 ```bash
-# Development (Local)
+# Development Environment
 make development-build
-make development-up
+make development-up-d
 # Access at http://localhost:8002
 
-# Staging
+# Staging Environment
 make staging-build
 make staging-up
 # Access at http://localhost:8001
 
-# Production
+# Production Environment
 make production-build
 make production-up
 # Access at http://localhost:8000
 ```
 
-## 🔐 Security Notes
-
-1. **Port Exposure**
-
-   - Development: All ports exposed for local development
-   - Staging: Only backend port exposed
-   - Production: Only backend port exposed (should be behind reverse proxy)
-
-2. **Environment Variables**
-
-   - Use different .env files for each environment
-   - Never commit .env files
-   - Use strong passwords in staging/production
-
-3. **Network Security**
-   - Development: Local access only
-   - Staging: Limited access, basic auth recommended
-   - Production: SSL/TLS required, proper authentication
-
-## 📚 Documentation
-
-Detailed setup instructions for each environment:
-
-- [Development Guide](development/README.md) - Local development setup
-- [Staging Guide](staging/README.md) - Pre-production testing
-- [Production Guide](production/README.md) - Live deployment
-
-Each environment has its own:
-
-- Docker configuration
-- Environment variables
-- Resource limits
-- Security settings
-- Monitoring setup
-
-## 🔧 Common Tasks
-
-### Check Service Status
+### Using Docker Compose Directly
 
 ```bash
 # Development
-make development-health
+docker compose -f docker/development/docker-compose.yml up -d
 
 # Staging
-make staging-health
+docker compose -f docker/staging/docker-compose.yml up -d
 
 # Production
-make production-health
+docker compose -f docker/production/docker-compose.yml up -d
 ```
 
-### View Logs
+## 🔧 Environment Features
+
+### Development
+
+- Hot reload enabled
+- Debug mode ON
+- Volume mounts for live code changes
+- Direct database access
+- Minimal resource limits
+- Django development server
+
+### Staging
+
+- Gunicorn with 2 workers
+- Debug mode OFF
+- Moderate resource limits
+- Health checks enabled
+- Log rotation
+- Static file serving
+
+### Production
+
+- Gunicorn with 4 workers
+- Maximum security measures
+- Higher resource limits
+- Health checks
+- Log rotation
+- Static/media file optimization
+- Non-root user execution
+
+## 📝 Common Operations
+
+### Service Management
 
 ```bash
-# Development
-make development-logs
+# Start services
+make [env]-up-d
 
-# Staging
-make staging-logs
+# Stop services
+make [env]-down
 
-# Production
-make production-logs
+# View logs
+make [env]-logs
+
+# Check health
+make [env]-health
 ```
 
 ### Database Operations
 
 ```bash
-# Development (local access)
-make development-db-status
+# Run migrations
+make [env]-migrate
 
-# Staging
-make staging-db-status
+# Create backup
+make db-backup  # Production only
 
-# Production
-make production-db-status
+# Check status
+make [env]-db-status
 ```
 
-## 🤝 Contributing
+### Monitoring
 
-1. Use development environment for local work
-2. Test changes in staging before production
-3. Follow security guidelines for each environment
-4. Keep documentation updated
+```bash
+# Check resources
+make [env]-check-resources
+
+# View volume permissions
+make [env]-check-volumes
+
+# Check service health
+make [env]-health
+```
+
+## 🔒 Security Features
+
+### Common Security Measures
+
+- Health checks for all services
+- Resource limits
+- Log rotation (max 3 files of 10MB each)
+- Internal Docker networks
+
+### Production/Staging Additional Security
+
+- Non-root user (django)
+- SSL/TLS ready
+- Bind-mounted volumes
+- Limited port exposure
+- Gunicorn worker configuration
+
+## 📦 Volume Management
+
+### Development
+
+- Local volume mounts for hot reload
+- Python packages volume for dependency caching
+
+### Staging/Production
+
+- Persistent PostgreSQL data
+- Persistent Redis data
+- Bind-mounted static files
+- Bind-mounted media files
+
+## 🔍 Health Checks
+
+All environments implement health checks:
+
+- Backend: Every 30s via HTTP endpoint
+- Database: Every 10s via pg_isready
+- Redis: Every 10s via ping
+
+## 📚 Documentation
+
+Detailed environment-specific guides:
+
+- [Development Guide](development/README.md)
+- [Staging Guide](staging/README.md)
+- [Production Guide](production/README.md)
+
+## ⚠️ Important Notes
+
+1. **Environment Files**
+
+   - Copy appropriate .env.example for each environment
+   - Never commit .env files
+   - Use strong passwords in staging/production
+
+2. **Resource Scaling**
+
+   - Development: Minimal resources for local development
+   - Staging: Moderate resources for testing
+   - Production: Full resources for live deployment
+
+3. **Port Conflicts**
+
+   - Each environment uses different ports to avoid conflicts
+   - Check port availability before starting services
+
+4. **Data Persistence**
+   - Development: Local volumes for easy reset
+   - Staging/Production: Named volumes for persistence
+
+Need help? Check the environment-specific README files or contact the DevOps team.
