@@ -1,16 +1,16 @@
 # 🔔 Notifications Service
 
-A real-time notification system integrated with the Users service, providing WebSocket-based notifications for profile
+A RESTful notification system integrated with the Users service, providing WebSocket-based notifications for profile
 updates and system events.
 
 ## ✨ Features
 
-- 🚀 Real-time notifications via WebSocket
+- 🚀 RESTful API endpoints
+- 🔌 Real-time notifications via WebSocket
 - 📝 Multiple notification types (Profile Update, Mention, System)
 - 🗑️ Soft deletion support
 - ✅ Read/Unread status tracking
 - 🔗 Generic relations to any model
-- 🔌 REST API endpoints
 - 🔐 Configurable authentication
 - ⚡ WebSocket real-time updates
 - 📦 Redis channel layer integration
@@ -34,12 +34,32 @@ The service behavior can be configured through environment variables:
 | `API_REQUIRE_AUTH` | Control API authentication | `True`  |
 | `REDIS_HOST`       | Redis host for WebSocket   | `redis` |
 
-## 🔌 API Endpoints
+## 🔌 REST API Endpoints
 
 ### List Notifications
 
 ```http
 GET /api/notifications/
+
+Response 200:
+[
+    {
+        "id": 1,
+        "recipient": {"id": 1, "username": "testuser"},
+        "actor": {"id": 2, "username": "admin"},
+        "notification_type": "profile_update",
+        "message": "Your profile has been updated",
+        "data": {"updated_fields": ["title"]},
+        "is_read": false,
+        "created_at": "2025-02-10T15:30:00Z"
+    }
+]
+```
+
+### Get Single Notification
+
+```http
+GET /api/notifications/{id}/
 
 Response 200:
 {
@@ -57,34 +77,43 @@ Response 200:
 ### Mark as Read
 
 ```http
-POST /api/notifications/{id}/mark-read/
+PATCH /api/notifications/{id}/read/
 
 Response 200:
 {
-    "status": "marked as read"
+    "id": 1,
+    "recipient": {"id": 1, "username": "testuser"},
+    "actor": {"id": 2, "username": "admin"},
+    "notification_type": "profile_update",
+    "message": "Your profile has been updated",
+    "data": {"updated_fields": ["title"]},
+    "is_read": true,
+    "created_at": "2025-02-10T15:30:00Z"
 }
 ```
 
 ### Mark All as Read
 
 ```http
-POST /api/notifications/mark-all-read/
+PATCH /api/notifications/bulk/read/
 
 Response 200:
-{
-    "status": "all marked as read"
-}
+[
+    {
+        "id": 1,
+        "is_read": true,
+        ...
+    },
+    ...
+]
 ```
 
 ### Delete Notification
 
 ```http
-DELETE /api/notifications/{id}/delete/
+DELETE /api/notifications/{id}/
 
-Response 200:
-{
-    "status": "deleted"
-}
+Response 204 No Content
 ```
 
 ## 🔌 WebSocket Integration
