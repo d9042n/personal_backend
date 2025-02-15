@@ -4,15 +4,22 @@ from .views import UserViewSet, PublicUserView
 
 urlpatterns = [
     # Public endpoints
-    path('public/profile/<str:username>/', PublicUserView.as_view(), name='public-profile'),
+    path('users/public/<str:username>/', PublicUserView.as_view(), name='public-profile'),
 
-    # User management endpoints
+    # Protected endpoints
     path('users/', UserViewSet.as_view({
         'post': 'create'
-    }), name='user-register'),
+    }), name='user-create'),
+    
     path('users/<str:username>/', UserViewSet.as_view({
         'get': 'retrieve',
+        'put': 'update',
         'patch': 'partial_update',
         'delete': 'destroy'
     }), name='user-detail'),
+    
+    path('users/<str:username>/profile/', UserViewSet.as_view({
+        'get': 'profile',
+        'patch': 'update_profile'
+    }), name='user-profile'),
 ]

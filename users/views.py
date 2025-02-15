@@ -9,14 +9,14 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
-from .serializers import UserSerializer, PublicUserSerializer
+from .serializers import UserSerializer, PublicUserSerializer, ProfileSerializer
 
 
 # Create your views here.
 
 class BaseAuthenticatedView:
-    """Base class for handling API_REQUIRE_AUTH setting"""
-    throttle_classes = [UserRateThrottle]  # Add rate limiting
+    """Base class for handling API authentication"""
+    throttle_classes = [UserRateThrottle]
 
     def get_permissions(self):
         if not settings.API_REQUIRE_AUTH:
@@ -370,29 +370,18 @@ class UserDetailView(APIView):
 
 
 class PublicUserView(APIView):
-    """Public API endpoint for retrieving user profiles"""
+    """Public endpoint for viewing user profiles"""
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [AnonRateThrottle]  # Add rate limiting for public endpoint
+    throttle_classes = [AnonRateThrottle]
 
     @swagger_auto_schema(
         operation_summary="Get public profile",
-        operation_description="""
-        Retrieve public profile information for any user by username.
-        
-        This endpoint:
-        * Is always publicly accessible
-        * Does not require authentication
-        * Returns only non-sensitive information
-        * Rate limited to 100 requests/day
-        
-        URL: /api/public/profile/{username}/
-        """,
+        operation_description="Retrieve public profile information for any user",
         responses={
             200: PublicUserSerializer,
-            404: "User not found",
-            429: "Too many requests - rate limit exceeded"
+            404: "User not found"
         },
-        tags=['Public Access']
+        tags=['Public']
     )
     def get(self, request, username):
         user = get_object_or_404(User, username=username, is_active=True)
@@ -492,37 +481,20 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         username = self.kwargs['username']
         user = get_object_or_404(User, username=username)
 
-        # For update/delete operations, check user permissions
-        if self.action in ['partial_update', 'destroy']:
+        # Check permissions for modification operations
+        if self.action in ['update', 'partial_update', 'destroy', 'update_profile']:
             if user != self.request.user and not self.request.user.is_staff:
                 raise PermissionDenied("You don't have permission to modify this user")
         return user
 
     @swagger_auto_schema(
-        operation_summary="Register new account",
-        operation_description="""
-        Create a new user account with profile information.
-        
-        This endpoint:
-        * Is always publicly accessible
-        * Does not require authentication
-        * Allows new users to register
-        
-        Required fields:
-        * username (unique)
-        * email (unique)
-        * password
-        
-        Optional:
-        * Profile information
-        * Social media links
-        """,
+        operation_summary="Create user account",
         request_body=UserSerializer,
         responses={
             201: UserSerializer,
-            400: "Invalid data - see response for details"
+            400: "Invalid data"
         },
-        tags=['Public Access']
+        tags=['Users']
     )
     def create(self, request):
         serializer = UserSerializer(data=request.data)
@@ -532,22 +504,12 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
-        operation_summary="Get user profile",
-        operation_description="""
-        Retrieve complete user profile information.
-        
-        Authentication:
-        * Required if API_REQUIRE_AUTH is True
-        * Optional if API_REQUIRE_AUTH is False
-        
-        Note: For public profile access, use /api/public/profile/{username}/ instead
-        """,
+        operation_summary="Get user details",
         responses={
             200: UserSerializer,
-            401: "Authentication required when API_REQUIRE_AUTH is True",
             404: "User not found"
         },
-        tags=['Protected Access']
+        tags=['Users']
     )
     def retrieve(self, request, username):
         user = self.get_object()
@@ -555,32 +517,34 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         return Response(serializer.data)
 
     @swagger_auto_schema(
-        operation_summary="Update user profile",
-        operation_description="""
-        Update user profile information.
-        
-        Authentication:
-        * Required if API_REQUIRE_AUTH is True
-        * Optional if API_REQUIRE_AUTH is False
-        
-        Authorization:
-        * Users can only update their own profile
-        * Staff users can update any profile
-        
-        Supports partial updates for:
-        * Basic information (name, email)
-        * Profile details (title, bio)
-        * Social links
-        """,
+        operation_summary="Update user",
         request_body=UserSerializer,
         responses={
             200: UserSerializer,
             400: "Invalid data",
-            401: "Authentication required when API_REQUIRE_AUTH is True",
-            403: "Permission denied - can only modify own profile",
+            403: "Permission denied",
             404: "User not found"
         },
-        tags=['Protected Access']
+        tags=['Users']
+    )
+    def update(self, request, username):
+        user = self.get_object()
+        serializer = UserSerializer(user, data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(UserSerializer(user).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Partially update user",
+        request_body=UserSerializer,
+        responses={
+            200: UserSerializer,
+            400: "Invalid data",
+            403: "Permission denied",
+            404: "User not found"
+        },
+        tags=['Users']
     )
     def partial_update(self, request, username):
         user = self.get_object()
@@ -591,25 +555,47 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
-        operation_summary="Delete user account",
-        operation_description="""
-        Permanently delete user account and all associated data.
-        
-        Authentication:
-        * Required if API_REQUIRE_AUTH is True
-        * Optional if API_REQUIRE_AUTH is False
-        
-        Authorization:
-        * Users can only delete their own account
-        * Staff users can delete any account
-        """,
+        operation_summary="Get user profile",
         responses={
-            204: "Account deleted successfully",
-            401: "Authentication required when API_REQUIRE_AUTH is True",
-            403: "Permission denied - can only delete own account",
+            200: ProfileSerializer,
             404: "User not found"
         },
-        tags=['Protected Access']
+        tags=['Profiles']
+    )
+    def profile(self, request, username):
+        user = self.get_object()
+        profile = user.users.profile
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_summary="Update profile",
+        request_body=ProfileSerializer,
+        responses={
+            200: ProfileSerializer,
+            400: "Invalid data",
+            403: "Permission denied",
+            404: "User not found"
+        },
+        tags=['Profiles']
+    )
+    def update_profile(self, request, username):
+        user = self.get_object()
+        profile = user.users.profile
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Delete user",
+        responses={
+            204: "User deleted",
+            403: "Permission denied",
+            404: "User not found"
+        },
+        tags=['Users']
     )
     def destroy(self, request, username):
         user = self.get_object()
