@@ -15,16 +15,16 @@ development-logs:
 	docker compose -f docker/development/docker-compose.yml logs -f
 
 development-shell:
-	docker compose -f docker/development/docker-compose.yml run --rm web python manage.py shell
+	docker compose -f docker/development/docker-compose.yml run --rm backend python manage.py shell
 
 development-migrate:
-	docker compose -f docker/development/docker-compose.yml run --rm web python manage.py migrate
+	docker compose -f docker/development/docker-compose.yml run --rm backend python manage.py migrate
 
 development-makemigrations:
-	docker compose -f docker/development/docker-compose.yml run --rm web python manage.py makemigrations
+	docker compose -f docker/development/docker-compose.yml run --rm backend python manage.py makemigrations
 
 development-createsuperuser:
-	docker compose -f docker/development/docker-compose.yml run --rm web python manage.py createsuperuser
+	docker compose -f docker/development/docker-compose.yml run --rm backend python manage.py createsuperuser
 
 # Staging environment
 staging-build:
@@ -40,10 +40,10 @@ staging-logs:
 	docker compose -f docker/staging/docker-compose.yml logs -f
 
 staging-migrate:
-	docker compose -f docker/staging/docker-compose.yml run --rm web python manage.py migrate
+	docker compose -f docker/staging/docker-compose.yml run --rm backend python manage.py migrate
 
 staging-collectstatic:
-	docker compose -f docker/staging/docker-compose.yml run --rm web python manage.py collectstatic --no-input
+	docker compose -f docker/staging/docker-compose.yml run --rm backend python manage.py collectstatic --no-input
 
 # Production environment
 production-build:
@@ -59,18 +59,18 @@ production-logs:
 	docker compose -f docker/production/docker-compose.yml logs -f
 
 production-migrate:
-	docker compose -f docker/production/docker-compose.yml run --rm web python manage.py migrate
+	docker compose -f docker/production/docker-compose.yml run --rm backend python manage.py migrate
 
 production-collectstatic:
-	docker compose -f docker/production/docker-compose.yml run --rm web python manage.py collectstatic --no-input
+	docker compose -f docker/production/docker-compose.yml run --rm backend python manage.py collectstatic --no-input
 
 # Testing
 test:
-	docker compose -f docker/development/docker-compose.yml run --rm web python manage.py test
+	docker compose -f docker/development/docker-compose.yml run --rm backend python manage.py test
 
 test-coverage:
-	docker compose -f docker/development/docker-compose.yml run --rm web coverage run manage.py test
-	docker compose -f docker/development/docker-compose.yml run --rm web coverage report
+	docker compose -f docker/development/docker-compose.yml run --rm backend coverage run manage.py test
+	docker compose -f docker/development/docker-compose.yml run --rm backend coverage report
 
 # Database
 db-backup:
