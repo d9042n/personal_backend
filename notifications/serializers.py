@@ -1,7 +1,9 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Notification
+
+User = get_user_model()
 
 
 class UserMinimalSerializer(serializers.ModelSerializer):
@@ -10,7 +12,7 @@ class UserMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username']
-        read_only_fields = ['id', 'username']
+        read_only_fields = fields
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -30,12 +32,4 @@ class NotificationSerializer(serializers.ModelSerializer):
             'is_read',
             'created_at'
         ]
-        read_only_fields = [
-            'id',
-            'recipient',
-            'actor',
-            'notification_type',
-            'message',
-            'data',
-            'created_at'
-        ]
+        read_only_fields = fields

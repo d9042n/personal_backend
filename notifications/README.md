@@ -1,116 +1,40 @@
 # 🔔 Notifications Service
 
-A comprehensive real-time notification system providing WebSocket-based notifications for user events, profile updates, and system messages.
-
-## 📋 Table of Contents
-
-- [Features](#-features)
-- [Architecture](#-architecture)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [API Reference](#-api-reference)
-- [WebSocket Integration](#-websocket-integration)
-- [Models](#-models)
-- [Testing](#-testing)
-- [Contributing](#-contributing)
+A RESTful notification system integrated with the Users service, providing WebSocket-based notifications for profile
+updates and system events.
 
 ## ✨ Features
 
-- 🚀 Real-time notifications via WebSocket
+- 🚀 RESTful API endpoints
+- 🔌 Real-time notifications via WebSocket
 - 📝 Multiple notification types (Profile Update, Mention, System)
 - 🗑️ Soft deletion support
 - ✅ Read/Unread status tracking
 - 🔗 Generic relations to any model
-- 🔌 REST API endpoints with Swagger documentation
 - 🔐 Configurable authentication
-- ⚡ Asynchronous WebSocket handling
+- ⚡ WebSocket real-time updates
 - 📦 Redis channel layer integration
-- 🔍 Advanced filtering and search
-- 📊 Database indexing for performance
 
-## 🏗 Architecture
+## 📋 System Architecture
 
-### Core Components
+### Integration with Users Service
 
-1. **Models**
+The notification system is tightly integrated with the Users service to provide automatic notifications for:
 
-   - `Notification`: Core model with generic relations
-   - Supports soft deletion and read status
-   - Optimized database indexes
+- Profile updates
+- User mentions
+- System notifications
 
-2. **WebSocket Consumer**
+### Environment Configuration
 
-   - Asynchronous message handling
-   - User-specific notification channels
-   - Real-time message delivery
+The service behavior can be configured through environment variables:
 
-3. **Services**
+| Variable           | Description                | Default |
+| ------------------ | -------------------------- | ------- |
+| `API_REQUIRE_AUTH` | Control API authentication | `True`  |
+| `REDIS_HOST`       | Redis host for WebSocket   | `redis` |
 
-   - `NotificationService`: Central notification creation
-   - Handles WebSocket dispatch
-   - Manages notification validation
-
-4. **API Views**
-   - RESTful endpoints
-   - Swagger documentation
-   - Configurable authentication
-
-## 🛠 Installation
-
-1. **Add to INSTALLED_APPS**
-
-```python
-INSTALLED_APPS = [
-    ...
-    'notifications',
-]
-```
-
-2. **Configure Channel Layer**
-
-```python
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [(os.getenv('REDIS_HOST', 'redis'), 6379)],
-        },
-    },
-}
-```
-
-3. **Add WebSocket URLs**
-
-```python
-# routing.py
-websocket_urlpatterns = [
-    re_path(r'ws/notifications/$', consumers.NotificationConsumer.as_asgi()),
-]
-```
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-| Variable           | Description               | Default |
-| ------------------ | ------------------------- | ------- |
-| `API_REQUIRE_AUTH` | Enable API authentication | `True`  |
-| `REDIS_HOST`       | Redis server host         | `redis` |
-| `REDIS_PORT`       | Redis server port         | `6379`  |
-
-### Django Settings
-
-```python
-# Authentication configuration
-API_REQUIRE_AUTH = True
-
-# WebSocket settings
-WSGI_APPLICATION = 'myproject.wsgi.application'
-ASGI_APPLICATION = 'myproject.asgi.application'
-```
-
-## 🔌 API Reference
+## 🔌 REST API Endpoints
 
 ### List Notifications
 
@@ -118,62 +42,83 @@ ASGI_APPLICATION = 'myproject.asgi.application'
 GET /api/notifications/
 
 Response 200:
+[
+    {
+        "id": 1,
+        "recipient": {"id": 1, "username": "testuser"},
+        "actor": {"id": 2, "username": "admin"},
+        "notification_type": "profile_update",
+        "message": "Your profile has been updated",
+        "data": {"updated_fields": ["title"]},
+        "is_read": false,
+        "created_at": "2025-02-10T15:30:00Z"
+    }
+]
+```
+
+### Get Single Notification
+
+```http
+GET /api/notifications/{id}/
+
+Response 200:
 {
     "id": 1,
-    "recipient": {
-        "id": 1,
-        "username": "testuser"
-    },
-    "actor": {
-        "id": 2,
-        "username": "admin"
-    },
+    "recipient": {"id": 1, "username": "testuser"},
+    "actor": {"id": 2, "username": "admin"},
     "notification_type": "profile_update",
     "message": "Your profile has been updated",
-    "data": {
-        "updated_fields": ["title"]
-    },
+    "data": {"updated_fields": ["title"]},
     "is_read": false,
-    "created_at": "2024-02-15T10:30:00Z"
+    "created_at": "2025-02-10T15:30:00Z"
 }
 ```
 
 ### Mark as Read
 
 ```http
-POST /api/notifications/{id}/mark-read/
+PATCH /api/notifications/{id}/read/
 
 Response 200:
 {
-    "status": "marked as read"
+    "id": 1,
+    "recipient": {"id": 1, "username": "testuser"},
+    "actor": {"id": 2, "username": "admin"},
+    "notification_type": "profile_update",
+    "message": "Your profile has been updated",
+    "data": {"updated_fields": ["title"]},
+    "is_read": true,
+    "created_at": "2025-02-10T15:30:00Z"
 }
 ```
 
 ### Mark All as Read
 
 ```http
-POST /api/notifications/mark-all-read/
+PATCH /api/notifications/bulk/read/
 
 Response 200:
-{
-    "status": "all marked as read"
-}
+[
+    {
+        "id": 1,
+        "is_read": true,
+        ...
+    },
+    ...
+]
 ```
 
 ### Delete Notification
 
 ```http
-DELETE /api/notifications/{id}/delete/
+DELETE /api/notifications/{id}/
 
-Response 200:
-{
-    "status": "deleted"
-}
+Response 204 No Content
 ```
 
 ## 🔌 WebSocket Integration
 
-### Connection Setup
+### Connection
 
 ```javascript
 const socket = new WebSocket("ws://your-domain/ws/notifications/");
@@ -184,77 +129,20 @@ socket.onmessage = function (event) {
 };
 ```
 
-### Message Format
+### Mark as Read via WebSocket
 
 ```javascript
-{
-    "type": "profile_update",
-    "message": "Your profile has been updated",
-    "id": 123,
-    "created_at": "2024-02-15T10:30:00Z",
-    "profile_update": {
-        "fields": ["title", "description"],
-        "profile_id": 456,
-        "username": "john_doe"
-    },
-    "data": {
-        "updated_fields": ["title", "description"]
-    }
-}
+socket.send(
+  JSON.stringify({
+    type: "mark_read",
+    notification_id: 1,
+  })
+);
 ```
 
-## 📦 Models
+## 📝 Creating Notifications
 
-### Notification Model
-
-| Field               | Type                 | Description                                 |
-| ------------------- | -------------------- | ------------------------------------------- |
-| `recipient`         | ForeignKey           | User receiving the notification             |
-| `actor`             | ForeignKey           | User triggering the notification (optional) |
-| `content_type`      | ForeignKey           | ContentType for generic relation            |
-| `object_id`         | PositiveIntegerField | ID of related object                        |
-| `notification_type` | CharField            | Type of notification                        |
-| `message`           | TextField            | Notification message                        |
-| `data`              | JSONField            | Additional data                             |
-| `is_read`           | BooleanField         | Read status                                 |
-| `is_deleted`        | BooleanField         | Soft deletion status                        |
-| `created_at`        | DateTimeField        | Creation timestamp                          |
-| `updated_at`        | DateTimeField        | Last update timestamp                       |
-
-### Database Indexes
-
-```python
-class Meta:
-    indexes = [
-        models.Index(fields=['recipient', '-created_at']),
-        models.Index(fields=['content_type', 'object_id']),
-        models.Index(fields=['notification_type']),
-        models.Index(fields=['is_read']),
-    ]
-```
-
-## 🧪 Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-python manage.py test notifications
-
-# Run specific test case
-python manage.py test notifications.tests.NotificationAPITest
-```
-
-### Test Coverage
-
-```bash
-coverage run manage.py test notifications
-coverage report
-```
-
-## 🔧 Development
-
-### Creating New Notifications
+Use the NotificationService to create new notifications:
 
 ```python
 from notifications.services import NotificationService
@@ -264,62 +152,149 @@ NotificationService.create_notification(
     recipient=user,
     notification_type=NotificationTypes.PROFILE_UPDATE,
     message="Your profile has been updated",
-    actor=request.user,
-    content_object=profile,
-    extra_data={'updated_fields': ['title']}
+    actor=request.user,  # optional
+    content_object=profile,  # optional
+    extra_data={'updated_fields': ['title']}  # optional
 )
 ```
 
-### Signal Integration
+## 📊 Notification Types
+
+Available types in `constants.py`:
+
+- `profile_update`: Profile update notifications
+- `mention`: User mention notifications
+- `system`: System notifications
+
+## 📚 Data Models
+
+### Notification Model
+
+| Field               | Type          | Description                      |
+| ------------------- | ------------- | -------------------------------- |
+| `recipient`         | ForeignKey    | User receiving the notification  |
+| `actor`             | ForeignKey    | User triggering the notification |
+| `notification_type` | CharField     | Type of notification             |
+| `message`           | TextField     | Notification message             |
+| `data`              | JSONField     | Additional data                  |
+| `is_read`           | BooleanField  | Read status                      |
+| `is_deleted`        | BooleanField  | Soft deletion status             |
+| `created_at`        | DateTimeField | Creation timestamp               |
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+python manage.py test notifications
+```
+
+## 💡 Example: Profile Update Flow
+
+1. User updates their profile
+2. Signal handler triggers:
 
 ```python
 @receiver(post_save, sender=Profile)
 def notify_profile_update(sender, instance, created, **kwargs):
     if not created:
         NotificationService.create_notification(
-            recipient=instance.user,
+            recipient=instance.users.user,
             notification_type=NotificationTypes.PROFILE_UPDATE,
             message='Your profile has been updated',
             content_object=instance
         )
 ```
 
-## 🔒 Security Considerations
+3. WebSocket delivers real-time notification
+4. Frontend receives and displays notification:
 
-1. **Authentication**
+```javascript
+const connectWebSocket = () => {
+  const socket = new WebSocket("ws://your-domain/ws/notifications/");
 
-   - Configurable API authentication
-   - WebSocket connection validation
-   - User-specific channels
+  socket.onmessage = (event) => {
+    const notification = JSON.parse(event.data);
+    showNotification(notification);
+  };
 
-2. **Data Protection**
+  return socket;
+};
+```
 
-   - Soft deletion support
-   - User data isolation
-   - Input validation
+# 🔔 Real-time Profile Update Notifications
 
-3. **Performance**
-   - Optimized database queries
-   - Indexed fields
-   - Asynchronous WebSocket handling
+## WebSocket Integration for Profile Updates
 
-## 📚 Additional Resources
+### Connection Setup
 
-- [Django Channels Documentation](https://channels.readthedocs.io/)
-- [WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
-- [Django Generic Relations](https://docs.djangoproject.com/en/stable/ref/contrib/contenttypes/)
+```javascript
+const socket = new WebSocket("ws://your-domain/ws/notifications/");
 
-## 🤝 Contributing
+socket.onmessage = function (event) {
+  const notification = JSON.parse(event.data);
 
-1. Fork the repository
-2. Create your feature branch
-3. Write tests for new features
-4. Submit a pull request
+  // Handle profile updates
+  if (notification.type === "profile_update") {
+    const { fields, profile_id, username } = notification.profile_update;
 
-## 📝 License
+    // Update UI with changed fields
+    updateProfileUI(fields, profile_id, username);
+  }
+};
+```
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Profile Update Notification Format
+
+```json
+{
+  "type": "profile_update",
+  "message": "Your profile has been updated: title, description",
+  "id": 123,
+  "created_at": "2024-03-15T10:30:00Z",
+  "profile_update": {
+    "fields": ["title", "description"],
+    "profile_id": 456,
+    "username": "john_doe"
+  },
+  "data": {
+    "updated_fields": ["title", "description"],
+    "profile_id": 456,
+    "username": "john_doe"
+  }
+}
+```
+
+### Frontend Integration Example
+
+```javascript
+function updateProfileUI(changedFields, profileId, username) {
+  // Refresh specific profile sections based on changed fields
+  changedFields.forEach((field) => {
+    switch (field) {
+      case "title":
+        refreshProfileTitle(profileId);
+        break;
+      case "description":
+        refreshProfileDescription(profileId);
+        break;
+      // Handle other fields...
+    }
+  });
+
+  // Show notification toast
+  showNotification(`Profile updated: ${changedFields.join(", ")}`);
+}
+```
+
+## Features
+
+- 🚀 Real-time profile update notifications
+- 📝 Detailed change tracking
+- 🔌 WebSocket-based delivery
+- 🔐 Authenticated connections
+- 📦 Field-specific updates
 
 ---
 
-Made with ❤️ by the Personal Website Team
+Made with ❤️ for the Personal Website Project

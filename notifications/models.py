@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -13,7 +14,7 @@ class Notification(models.Model):
     """
     # Core fields
     recipient = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='notifications',
         verbose_name=_('Recipient'),
@@ -21,13 +22,13 @@ class Notification(models.Model):
     )
 
     actor = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='triggered_notifications',
         verbose_name=_('Actor'),
-        help_text=_('User who triggered the notification (optional)')
+        help_text=_('User who triggered the notification')
     )
 
     # Generic relation fields
