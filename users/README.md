@@ -1,79 +1,166 @@
-# User Profile API
+# 👤 User Profile Service
 
-A RESTful API for user profile management focusing on simplicity and security.
+A comprehensive RESTful API service for user profile management, focusing on security, extensibility, and real-time updates.
 
-## Features
+## ✨ Features
 
-- Public profile viewing
-- User management (CRUD)
-- Profile customization
-- Secure authentication
-- Real-time updates
+- 🔐 Secure authentication and authorization
+- 👥 Public and private profile views
+- 🚀 Real-time profile updates
+- 🔄 Seamless integration with notifications
+- 📱 Social media profile linking
+- 🎨 Customizable user badges
+- 🔍 Advanced profile search
+- 📊 Activity tracking
 
-## API Documentation
+## 🔌 REST API Endpoints
 
-### Endpoints
+### Public Endpoints
 
 | Method | Endpoint                       | Description         | Auth Required |
 | ------ | ------------------------------ | ------------------- | ------------- |
-| GET    | /api/users/public/{username}/  | View public profile | No            |
-| POST   | /api/users/                    | Create user         | No            |
-| GET    | /api/users/{username}/         | Get user details    | Yes           |
-| PUT    | /api/users/{username}/         | Update user         | Yes           |
-| PATCH  | /api/users/{username}/         | Partial update      | Yes           |
-| DELETE | /api/users/{username}/         | Delete user         | Yes           |
-| GET    | /api/users/{username}/profile/ | Get profile         | Yes           |
-| PATCH  | /api/users/{username}/profile/ | Update profile      | Yes           |
+| GET    | `/api/users/public/{username}` | View public profile | No            |
+| POST   | `/api/users`                   | Register new user   | No            |
 
-### Examples
+### Protected Endpoints
 
-#### View Public Profile
+| Method | Endpoint                        | Description      | Auth Required |
+| ------ | ------------------------------- | ---------------- | ------------- |
+| GET    | `/api/users/{username}`         | Get user details | Yes           |
+| PUT    | `/api/users/{username}`         | Update user      | Yes           |
+| PATCH  | `/api/users/{username}`         | Partial update   | Yes           |
+| DELETE | `/api/users/{username}`         | Delete user      | Yes           |
+| GET    | `/api/users/{username}/profile` | Get profile      | Yes           |
+| PATCH  | `/api/users/{username}/profile` | Update profile   | Yes           |
+
+## 📝 API Examples
+
+### View Public Profile
 
 ```http
-GET /api/users/public/{username}/
+GET /api/users/public/johndoe
+
+Response 200:
+{
+    "username": "johndoe",
+    "profile": {
+        "name": "John Doe",
+        "title": "Senior Developer",
+        "badge": "Available",
+        "is_available": true,
+        "description": "Full-stack developer with 5 years experience",
+        "github": "https://github.com/johndoe",
+        "linkedin": "https://linkedin.com/in/johndoe",
+        "twitter": "https://twitter.com/johndoe"
+    }
+}
 ```
 
-#### Create User
+### Create User
 
 ```http
-POST /api/users/
+POST /api/users
 
+Request:
 {
-  "username": "newuser",
-  "email": "user@example.com",
-  "password": "secure_password",
-  "profile": {
-    "name": "New User",
-    "title": "Developer",
-    "is_available": true
+    "username": "johndoe",
+    "email": "john@example.com",
+    "password": "SecurePass123!",
+    "users": {
+        "profile": {
+            "name": "John Doe",
+            "title": "Senior Developer",
+            "is_available": true,
+            "description": "Full-stack developer"
+        }
+    }
+}
+
+Response 201:
+{
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "users": {
+        "profile": {
+            "name": "John Doe",
+            "title": "Senior Developer",
+            "is_available": true
+        }
+    }
+}
+```
+
+### Update Profile
+
+```http
+PATCH /api/users/johndoe/profile
+
+Request:
+{
+    "title": "Lead Developer",
+    "is_available": false,
+    "badge": "Busy"
+}
+
+Response 200:
+{
+    "name": "John Doe",
+    "title": "Lead Developer",
+    "is_available": false,
+    "badge": "Busy"
+}
+```
+
+## 🔒 Security Features
+
+### Authentication
+
+- Token-based authentication
+- Session support
+- OAuth2 integration (optional)
+
+### Password Requirements
+
+- Minimum length: 10 characters
+- Must include:
+  - Uppercase letters
+  - Lowercase letters
+  - Numbers
+  - Special characters
+
+### Rate Limiting
+
+- Anonymous: 100 requests/day
+- Authenticated: 1000 requests/day
+
+### Data Protection
+
+- HTTPS required in production
+- CORS protection
+- XSS prevention
+- CSRF tokens
+- SQL injection prevention
+
+## 🔄 Real-time Updates
+
+The service integrates with the Notifications service to provide real-time profile updates:
+
+```javascript
+// WebSocket connection for real-time updates
+const socket = new WebSocket("ws://your-domain/ws/notifications/");
+
+socket.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === "profile_update") {
+    updateProfileUI(data.profile_update);
   }
-}
+};
 ```
 
-#### Update Profile
+## 🛠️ Development
 
-```http
-PATCH /api/users/{username}/profile/
-
-{
-  "title": "Senior Developer",
-  "badge": "Available"
-}
-```
-
-## Security
-
-- Authentication required for protected endpoints
-- Rate limiting:
-  - Public: 100 requests/day
-  - Authenticated: 1000 requests/day
-- Password requirements:
-  - Minimum length: 10 characters
-  - Complexity enforced
-- CORS, XSS, and CSRF protection
-- SSL/HTTPS required in production
-
-## Development
+### Setup
 
 ```bash
 # Install dependencies
@@ -82,15 +169,56 @@ pip install -r requirements.txt
 # Run migrations
 python manage.py migrate
 
-# Run tests
-python manage.py test users
+# Create superuser
+python manage.py createsuperuser
 ```
 
-## Documentation
+### Testing
 
-For detailed API documentation, visit:
+```bash
+# Run all tests
+python manage.py test users
+
+# Run specific test
+python manage.py test users.tests.UserAPITest
+```
+
+### Code Quality
+
+```bash
+# Run linting
+flake8 users
+
+# Run type checking
+mypy users
+```
+
+## 📚 Documentation
+
+Detailed API documentation is available at:
 
 - Swagger UI: `/swagger/`
 - ReDoc: `/redoc/`
+
+## 🔧 Configuration
+
+Environment variables:
+
+| Variable           | Description             | Default    |
+| ------------------ | ----------------------- | ---------- |
+| `API_REQUIRE_AUTH` | Require authentication  | `True`     |
+| `PASSWORD_MIN_LEN` | Minimum password length | `10`       |
+| `RATE_LIMIT_ANON`  | Anonymous rate limit    | `100/day`  |
+| `RATE_LIMIT_USER`  | User rate limit         | `1000/day` |
+
+## 📦 Dependencies
+
+- Django 4.2+
+- Django REST Framework
+- Channels (WebSocket)
+- PostgreSQL
+- Redis (WebSocket)
+
+---
 
 Made with ❤️ for the Personal Website Project
