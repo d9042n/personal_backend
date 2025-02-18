@@ -4,11 +4,34 @@ from rest_framework import serializers
 from .models import Users, Profile
 
 
+class SocialLinksSerializer(serializers.Serializer):
+    github = serializers.URLField(required=False, allow_null=True)
+    linkedin = serializers.URLField(required=False, allow_null=True)
+    twitter = serializers.URLField(required=False, allow_null=True)
+    facebook = serializers.URLField(required=False, allow_null=True)
+    leetcode = serializers.URLField(required=False, allow_null=True)
+    hackerrank = serializers.URLField(required=False, allow_null=True)
+    medium = serializers.URLField(required=False, allow_null=True)
+    stackoverflow = serializers.URLField(required=False, allow_null=True)
+    portfolio = serializers.URLField(required=False, allow_null=True)
+    youtube = serializers.URLField(required=False, allow_null=True)
+    devto = serializers.URLField(required=False, allow_null=True)
+
+
 class PublicProfileSerializer(serializers.ModelSerializer):
+    social_links = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
-        fields = ['is_available', 'badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
+        fields = ['is_available', 'badge', 'name', 'title', 'description', 'social_links']
         read_only_fields = fields  # All fields read-only for public view
+
+    def get_social_links(self, obj):
+        social_fields = ['github', 'linkedin', 'twitter', 'facebook', 'leetcode', 
+                        'hackerrank', 'medium', 'stackoverflow', 'portfolio', 
+                        'youtube', 'devto']
+        social_links = {field: getattr(obj, field) for field in social_fields}
+        return {k: v for k, v in social_links.items() if v is not None}
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
