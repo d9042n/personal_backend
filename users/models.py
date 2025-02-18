@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-from .validators import validate_github_url, validate_linkedin_url, validate_twitter_url
+from .validators import validate_github_url, validate_linkedin_url, validate_twitter_url, validate_facebook_url, validate_leetcode_url, validate_hackerrank_url, validate_medium_url, validate_stackoverflow_url, validate_portfolio_url, validate_youtube_url, validate_devto_url
 
 
 # Create your models here.
@@ -37,9 +37,19 @@ class Profile(models.Model):
     name = models.CharField(max_length=100, default="", blank=True)
     title = models.CharField(max_length=100, default="", blank=True)
     description = models.TextField(default="", blank=True)
+    
+    # Social Links
     github = models.URLField(null=True, blank=True, validators=[validate_github_url])
     linkedin = models.URLField(null=True, blank=True, validators=[validate_linkedin_url])
     twitter = models.URLField(null=True, blank=True, validators=[validate_twitter_url])
+    facebook = models.URLField(null=True, blank=True, validators=[validate_facebook_url])
+    leetcode = models.URLField(null=True, blank=True, validators=[validate_leetcode_url])
+    hackerrank = models.URLField(null=True, blank=True, validators=[validate_hackerrank_url])
+    medium = models.URLField(null=True, blank=True, validators=[validate_medium_url])
+    stackoverflow = models.URLField(null=True, blank=True, validators=[validate_stackoverflow_url])
+    portfolio = models.URLField(null=True, blank=True, validators=[validate_portfolio_url])
+    youtube = models.URLField(null=True, blank=True, validators=[validate_youtube_url])
+    devto = models.URLField(null=True, blank=True, validators=[validate_devto_url])
 
     def __str__(self):
         return f"{self.users.user.username}'s profile"

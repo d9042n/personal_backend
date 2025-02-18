@@ -49,9 +49,19 @@ Response 200:
         "badge": "Available",
         "is_available": true,
         "description": "Full-stack developer with 5 years experience",
-        "github": "https://github.com/johndoe",
-        "linkedin": "https://linkedin.com/in/johndoe",
-        "twitter": "https://twitter.com/johndoe"
+        "social_links": {
+            "github": "https://github.com/johndoe",
+            "linkedin": "https://linkedin.com/in/johndoe",
+            "twitter": "https://twitter.com/johndoe",
+            "facebook": "https://facebook.com/johndoe",
+            "leetcode": "https://leetcode.com/johndoe",
+            "hackerrank": "https://hackerrank.com/johndoe",
+            "medium": "https://medium.com/@johndoe",
+            "stackoverflow": "https://stackoverflow.com/users/123/johndoe",
+            "portfolio": "https://johndoe.dev",
+            "youtube": "https://youtube.com/@johndoe",
+            "devto": "https://dev.to/johndoe"
+        }
     }
 }
 ```
@@ -71,7 +81,18 @@ Request:
             "name": "John Doe",
             "title": "Senior Developer",
             "is_available": true,
-            "description": "Full-stack developer"
+            "description": "Full-stack developer",
+            "github": "https://github.com/johndoe",
+            "linkedin": "https://linkedin.com/in/johndoe",
+            "twitter": "https://twitter.com/johndoe",
+            "facebook": "https://facebook.com/johndoe",
+            "leetcode": "https://leetcode.com/johndoe",
+            "hackerrank": "https://hackerrank.com/johndoe",
+            "medium": "https://medium.com/@johndoe",
+            "stackoverflow": "https://stackoverflow.com/users/123/johndoe",
+            "portfolio": "https://johndoe.dev",
+            "youtube": "https://youtube.com/@johndoe",
+            "devto": "https://dev.to/johndoe"
         }
     }
 }
@@ -85,7 +106,20 @@ Response 201:
         "profile": {
             "name": "John Doe",
             "title": "Senior Developer",
-            "is_available": true
+            "is_available": true,
+            "social_links": {
+                "github": "https://github.com/johndoe",
+                "linkedin": "https://linkedin.com/in/johndoe",
+                "twitter": "https://twitter.com/johndoe",
+                "facebook": "https://facebook.com/johndoe",
+                "leetcode": "https://leetcode.com/johndoe",
+                "hackerrank": "https://hackerrank.com/johndoe",
+                "medium": "https://medium.com/@johndoe",
+                "stackoverflow": "https://stackoverflow.com/users/123/johndoe",
+                "portfolio": "https://johndoe.dev",
+                "youtube": "https://youtube.com/@johndoe",
+                "devto": "https://dev.to/johndoe"
+            }
         }
     }
 }

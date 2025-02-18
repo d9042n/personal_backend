@@ -557,7 +557,34 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
     @swagger_auto_schema(
         operation_summary="Get user profile",
         responses={
-            200: ProfileSerializer,
+            200: openapi.Response(
+                description="User profile retrieved successfully",
+                examples={
+                    "application/json": {
+                        "username": "johndoe",
+                        "profile": {
+                            "is_available": True,
+                            "badge": "Available",
+                            "name": "John Doe",
+                            "title": "Senior Developer",
+                            "description": "Full-stack developer",
+                            "social_links": {
+                                "github": "https://github.com/johndoe",
+                                "linkedin": "https://linkedin.com/in/johndoe",
+                                "twitter": "https://twitter.com/johndoe",
+                                "facebook": "https://facebook.com/johndoe",
+                                "leetcode": "https://leetcode.com/johndoe",
+                                "hackerrank": "https://hackerrank.com/johndoe",
+                                "medium": "https://medium.com/@johndoe",
+                                "stackoverflow": "https://stackoverflow.com/users/123/johndoe",
+                                "portfolio": "https://johndoe.dev",
+                                "youtube": "https://youtube.com/@johndoe",
+                                "devto": "https://dev.to/johndoe"
+                            }
+                        }
+                    }
+                }
+            ),
             404: "User not found"
         },
         tags=['Profiles']
@@ -570,7 +597,27 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
 
     @swagger_auto_schema(
         operation_summary="Update profile",
-        request_body=ProfileSerializer,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                'badge': openapi.Schema(type=openapi.TYPE_STRING),
+                'name': openapi.Schema(type=openapi.TYPE_STRING),
+                'title': openapi.Schema(type=openapi.TYPE_STRING),
+                'description': openapi.Schema(type=openapi.TYPE_STRING),
+                'github': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'linkedin': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'twitter': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'facebook': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'leetcode': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'hackerrank': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'medium': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'stackoverflow': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'portfolio': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'youtube': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'devto': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+            }
+        ),
         responses={
             200: ProfileSerializer,
             400: "Invalid data",
