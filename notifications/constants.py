@@ -6,11 +6,15 @@ class NotificationTypes:
     PROFILE_UPDATE = 'profile_update'
     MENTION = 'mention'
     SYSTEM = 'system'
+    SESSION_TERMINATED = 'session_terminated'
+    SESSIONS_TERMINATED = 'sessions_terminated'
 
     CHOICES = [
         (PROFILE_UPDATE, _('Profile Update')),
         (MENTION, _('Mention')),
         (SYSTEM, _('System Notification')),
+        (SESSION_TERMINATED, _('Session Terminated')),
+        (SESSIONS_TERMINATED, _('Multiple Sessions Terminated')),
     ]
 
     @classmethod

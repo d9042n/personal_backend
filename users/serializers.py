@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from django.utils import timezone
 
-from .models import Users, Profile
+from .models import Users, Profile, UserSession
 
 
 class SocialLinksSerializer(serializers.Serializer):
@@ -125,3 +126,25 @@ class UserSerializer(serializers.ModelSerializer):
                 profile.save()
 
         return instance
+
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    duration = serializers.SerializerMethodField()
+    time_until_expiry = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserSession
+        fields = [
+            'id', 'session_key', 'created_at', 'last_activity', 
+            'ip_address', 'user_agent', 'device_type', 'location',
+            'is_active', 'expires_at', 'duration', 'time_until_expiry'
+        ]
+        read_only_fields = fields
+
+    def get_duration(self, obj):
+        return (obj.last_activity - obj.created_at).total_seconds()
+
+    def get_time_until_expiry(self, obj):
+        if obj.is_expired():
+            return 0
+        return (obj.expires_at - timezone.now()).total_seconds()

@@ -18,6 +18,7 @@ This file is organized into logical sections:
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Load environment variables
 load_dotenv()
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "channels",
     "drf_yasg",
+    "rest_framework_simplejwt",
     
     # Local apps
     'users',
@@ -60,6 +62,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'users.middleware.UserSessionMiddleware',
 ]
 
 ROOT_URLCONF = "personal_backend.urls"
@@ -131,10 +134,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated' if API_REQUIRE_AUTH
         else 'rest_framework.permissions.AllowAny',
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-    ],
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_THROTTLE_CLASSES': [
@@ -245,3 +249,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "personal_backend.wsgi.application"
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}

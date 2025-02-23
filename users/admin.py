@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-from .models import Users, Profile
+from .models import Users, Profile, UserSession
 
 
 class ProfileInline(admin.StackedInline):
@@ -40,6 +40,14 @@ class UsersAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__email')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [ProfileInline]
+
+
+@admin.register(UserSession)
+class UserSessionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'session_key', 'created_at', 'last_activity')
+    search_fields = ('user__username', 'session_key')
+    list_filter = ('user', 'created_at')
+    ordering = ('-created_at',)
 
 
 # Re-register UserAdmin

@@ -8,6 +8,13 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
+from django.contrib.auth import authenticate, login, logout
+from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import UserSession
+from .serializers import UserSerializer, PublicUserSerializer, ProfileSerializer, UserSessionSerializer
+from notifications.services import NotificationService
+from notifications.constants import NotificationTypes
 
 from .serializers import UserSerializer, PublicUserSerializer, ProfileSerializer
 
@@ -648,3 +655,180 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         user = self.get_object()
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UserLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="User Login",
+        operation_description="Authenticate a user and return access and refresh tokens.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username or email'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='User password'),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Login successful",
+                examples={
+                    "application/json": {
+                        "refresh": "refresh_token",
+                        "access": "access_token",
+                        "user": {
+                            "id": 1,
+                            "username": "example_user",
+                            "email": "user@example.com"
+                        }
+                    }
+                }
+            ),
+            401: openapi.Response(description="Invalid username or password.")
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        """Handle user login and return tokens."""
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            }, status=status.HTTP_200_OK)
+        return Response({"detail": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserLogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="User Logout",
+        operation_description="Log out the user and invalidate the current session.",
+        responses={
+            200: openapi.Response(
+                description="Successfully logged out",
+                examples={
+                    "application/json": {
+                        "detail": "Successfully logged out."
+                    }
+                }
+            ),
+            401: openapi.Response(description="Authentication credentials were not provided.")
+        },
+        tags=['Authentication']
+    )
+    def post(self, request):
+        """Handle user logout."""
+        if hasattr(request, 'session'):
+            # Invalidate the current session
+            session = UserSession.objects.filter(
+                user=request.user,
+                session_key=request.session.session_key,
+                is_active=True
+            ).first()
+            
+            if session:
+                session.terminate()
+
+        logout(request)
+        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+
+
+class UserSessionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Get User Sessions",
+        operation_description="Retrieve all active sessions for the authenticated user.",
+        responses={
+            200: UserSessionSerializer(many=True),
+            204: openapi.Response(description="No active sessions found.")
+        },
+        tags=['Sessions']
+    )
+    def get(self, request):
+        """Retrieve all active sessions for the authenticated user."""
+        user_sessions = request.user.sessions.filter(is_active=True)
+        if not user_sessions:
+            return Response({"detail": "No active sessions found."}, status=status.HTTP_204_NO_CONTENT)
+
+        # Renew sessions upon activity
+        for session in user_sessions:
+            session.last_activity = timezone.now()
+            session.save()
+
+        serializer = UserSessionSerializer(user_sessions, many=True)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_summary="Invalidate User Session",
+        operation_description="Invalidate specific session or all sessions except current",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'session_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description='Specific session ID to invalidate (optional)'
+                ),
+                'all_except_current': openapi.Schema(
+                    type=openapi.TYPE_BOOLEAN,
+                    description='Invalidate all sessions except current'
+                ),
+            }
+        ),
+        responses={
+            204: openapi.Response(description="Session(s) invalidated."),
+            400: openapi.Response(description="Invalid request parameters."),
+            404: openapi.Response(description="Session not found.")
+        },
+        tags=['Sessions']
+    )
+    def delete(self, request):
+        """Invalidate user session(s)."""
+        session_id = request.data.get('session_id')
+        all_except_current = request.data.get('all_except_current', False)
+
+        if session_id:
+            try:
+                session = UserSession.objects.get(
+                    id=session_id,
+                    user=request.user,
+                    is_active=True
+                )
+                session.terminate()
+                return Response({"detail": "Session invalidated."}, status=status.HTTP_204_NO_CONTENT)
+            except UserSession.DoesNotExist:
+                return Response({"detail": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if all_except_current:
+            current_session_key = request.session.session_key
+            other_sessions = UserSession.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(session_key=current_session_key)
+
+            for session in other_sessions:
+                session.terminate()
+
+            NotificationService.create_notification(
+                recipient=request.user,
+                notification_type=NotificationTypes.SESSIONS_TERMINATED,
+                message="All other sessions have been terminated",
+                extra_data={
+                    'terminated_count': other_sessions.count(),
+                    'current_session_key': current_session_key
+                }
+            )
+
+            return Response({"detail": "All other sessions invalidated."}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({"detail": "Invalid request parameters."}, status=status.HTTP_400_BAD_REQUEST)

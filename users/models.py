@@ -3,6 +3,11 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
+from django.contrib.sessions.models import Session
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from notifications.services import NotificationService
+from notifications.constants import NotificationTypes
 
 from .validators import validate_github_url, validate_linkedin_url, validate_twitter_url, validate_facebook_url, validate_leetcode_url, validate_hackerrank_url, validate_medium_url, validate_stackoverflow_url, validate_portfolio_url, validate_youtube_url, validate_devto_url
 
@@ -72,3 +77,52 @@ def create_users(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_users(sender, instance, **kwargs):
     instance.users.save()
+
+
+class UserSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    session_key = models.CharField(max_length=40, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    device_type = models.CharField(max_length=20, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-last_activity']
+        indexes = [
+            models.Index(fields=['user', '-last_activity']),
+            models.Index(fields=['session_key']),
+            models.Index(fields=['is_active']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=30)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    def extend_session(self, hours=24):
+        self.expires_at = timezone.now() + timezone.timedelta(hours=hours)
+        self.save()
+
+    def terminate(self):
+        self.is_active = False
+        self.save()
+        NotificationService.create_notification(
+            recipient=self.user,
+            notification_type=NotificationTypes.SESSION_TERMINATED,
+            message=f"Session from {self.device_type or 'unknown device'} was terminated",
+            content_object=self,
+            extra_data={
+                'session_id': self.id,
+                'ip_address': self.ip_address,
+                'location': self.location,
+                'device_type': self.device_type
+            }
+        )

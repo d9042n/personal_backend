@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import UserViewSet, PublicUserView
+from .views import UserViewSet, PublicUserView, UserLoginView, UserLogoutView, UserSessionView
 
 urlpatterns = [
     # Public endpoints
@@ -22,4 +22,8 @@ urlpatterns = [
         'get': 'profile',
         'patch': 'update_profile'
     }), name='user-profile'),
+
+    path('login/', UserLoginView.as_view(), name='login'),
+    path('logout/', UserLogoutView.as_view(), name='logout'),
+    path('session/', UserSessionView.as_view(), name='session'),
 ]
