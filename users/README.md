@@ -1,17 +1,17 @@
-# 👤 User Profile Service
+# 👤 User Profile Management Service
 
 A comprehensive RESTful API service for user profile management, focusing on security, extensibility, and real-time updates.
 
 ## ✨ Features
 
-- 🔐 Secure authentication and authorization
-- 👥 Public and private profile views
-- 🚀 Real-time profile updates
-- 🔄 Seamless integration with notifications
-- 📱 Social media profile linking
-- 🎨 Customizable user badges
-- 🔍 Advanced profile search
-- 📊 Activity tracking
+- 🔐 **Secure Authentication and Authorization**: Token-based authentication with support for JWT.
+- 👥 **Public and Private Profile Views**: Users can view public profiles and manage their own private profiles.
+- 🚀 **Real-time Profile Updates**: Integration with a notification service for real-time updates.
+- 🔄 **Seamless Integration with Notifications**: Users receive notifications for profile updates and session management.
+- 📱 **Social Media Profile Linking**: Users can link their social media accounts to their profiles.
+- 🎨 **Customizable User Badges**: Users can set their availability status with customizable badges.
+- 🔍 **Advanced Profile Search**: Search for users based on various criteria.
+- 📊 **Activity Tracking**: Track user activity and session management.
 
 ## 🔌 REST API Endpoints
 
@@ -24,14 +24,18 @@ A comprehensive RESTful API service for user profile management, focusing on sec
 
 ### Protected Endpoints
 
-| Method | Endpoint                        | Description      | Auth Required |
-| ------ | ------------------------------- | ---------------- | ------------- |
-| GET    | `/api/users/{username}`         | Get user details | Yes           |
-| PUT    | `/api/users/{username}`         | Update user      | Yes           |
-| PATCH  | `/api/users/{username}`         | Partial update   | Yes           |
-| DELETE | `/api/users/{username}`         | Delete user      | Yes           |
-| GET    | `/api/users/{username}/profile` | Get profile      | Yes           |
-| PATCH  | `/api/users/{username}/profile` | Update profile   | Yes           |
+| Method | Endpoint                        | Description                | Auth Required |
+| ------ | ------------------------------- | -------------------------- | ------------- |
+| GET    | `/api/users/{username}`         | Get user details           | Yes           |
+| PUT    | `/api/users/{username}`         | Update user                | Yes           |
+| PATCH  | `/api/users/{username}`         | Partially update user      | Yes           |
+| DELETE | `/api/users/{username}`         | Delete user                | Yes           |
+| GET    | `/api/users/{username}/profile` | Get profile                | Yes           |
+| PATCH  | `/api/users/{username}/profile` | Update profile             | Yes           |
+| POST   | `/api/login/`                   | User Login                 | No            |
+| POST   | `/api/logout/`                  | User Logout                | Yes           |
+| GET    | `/api/session/`                 | Get user sessions          | Yes           |
+| DELETE | `/api/session/`                 | Invalidate user session(s) | Yes           |
 
 ## 📝 API Examples
 

@@ -1,15 +1,12 @@
-from django.urls import path
-from .views import (
-    NotificationViewSet,
-    NotificationBulkUpdateView
-)
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .views import NotificationViewSet
 
 app_name = 'notifications'
 
 router = DefaultRouter()
-router.register(r'', NotificationViewSet, basename='notification')
+router.register('', NotificationViewSet, basename='notification')
 
 urlpatterns = [
-    path('bulk/read/', NotificationBulkUpdateView.as_view(), name='notification-bulk-update'),
-] + router.urls
+    path('', include(router.urls)),
+]
