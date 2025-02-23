@@ -59,3 +59,25 @@ Welcome to the Personal Backend documentation! This documentation provides detai
 - PostgreSQL
 - Redis
 - JWT Authentication
+
+## 📊 Diagrams
+
+- [User Registration Flow](diagrams/flows/user_registration_flow.md)
+- [User Login Flow](diagrams/flows/user_login_flow.md)
+- [User Logout Flow](diagrams/flows/user_logout_flow.md)
+- [Edit User Profile Flow](diagrams/flows/edit_user_profile_flow.md)
+- [Manage User Sessions Flow](diagrams/flows/manage_user_sessions_flow.md)
+- [Real-time Notifications Flow](diagrams/flows/real_time_notifications_flow.md)
+- [Mark Notifications as Read Flow](diagrams/flows/mark_notifications_as_read_flow.md)
+- [Delete Notifications Flow](diagrams/flows/delete_notifications_flow.md)
+
+## 📈 Sequence Diagrams
+
+- [User Registration Sequence](diagrams/sequences/user_registration_sequence.md)
+- [User Login Sequence](diagrams/sequences/user_login_sequence.md)
+- [User Logout Sequence](diagrams/sequences/user_logout_sequence.md)
+- [Edit User Profile Sequence](diagrams/sequences/edit_user_profile_sequence.md)
+- [Manage User Sessions Sequence](diagrams/sequences/manage_user_sessions_sequence.md)
+- [Real-time Notifications Sequence](diagrams/sequences/real_time_notifications_sequence.md)
+- [Mark Notifications as Read Sequence](diagrams/sequences/mark_notifications_as_read_sequence.md)
+- [Delete Notifications Sequence](diagrams/sequences/delete_notifications_sequence.md)
