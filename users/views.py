@@ -15,6 +15,7 @@ from .models import UserSession
 from .serializers import UserSerializer, PublicUserSerializer, ProfileSerializer, UserSessionSerializer
 from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
+from django.db.models import Q
 
 # Base class for handling API authentication
 class BaseAuthenticatedView:
@@ -307,13 +308,19 @@ class UserLoginView(APIView):
 
     @swagger_auto_schema(
         operation_summary="User Login",
-        operation_description="Authenticate a user and return access and refresh tokens.",
+        operation_description="Authenticate a user using username or email.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['username', 'password'],
+            required=['username_or_email', 'password'],
             properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username or email'),
-                'password': openapi.Schema(type=openapi.TYPE_STRING, description='User password'),
+                'username_or_email': openapi.Schema(
+                    type=openapi.TYPE_STRING, 
+                    description='Username or email address'
+                ),
+                'password': openapi.Schema(
+                    type=openapi.TYPE_STRING, 
+                    description='User password'
+                ),
             }
         ),
         responses={
@@ -331,25 +338,52 @@ class UserLoginView(APIView):
                     }
                 }
             ),
-            401: openapi.Response(description="Invalid username or password.")
+            401: openapi.Response(description="Invalid credentials.")
         },
         tags=['Authentication']
     )
     def post(self, request):
-        """Handle user login and return tokens."""
-        username = request.data.get('username')
+        """Handle user login with username or email."""
+        username_or_email = request.data.get('username_or_email')
         password = request.data.get('password')
         
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                'user': UserSerializer(user).data
-            }, status=status.HTTP_200_OK)
-        return Response({"detail": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
+        if not username_or_email or not password:
+            return Response(
+                {"detail": "Both username/email and password are required."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Try to find the user by username or email
+        try:
+            user = User.objects.get(
+                Q(username=username_or_email) | Q(email=username_or_email)
+            )
+            # Authenticate with the username
+            auth_user = authenticate(
+                request, 
+                username=user.username, 
+                password=password
+            )
+            
+            if auth_user is not None:
+                login(request, auth_user)
+                refresh = RefreshToken.for_user(auth_user)
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                    'user': UserSerializer(auth_user).data
+                }, status=status.HTTP_200_OK)
+            
+            return Response(
+                {"detail": "Invalid password."}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+            
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "No user found with this username or email."}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class UserLogoutView(APIView):

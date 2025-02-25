@@ -8,7 +8,7 @@ The Personal Backend uses token-based authentication to secure API endpoints. Th
 
 1. **User Login**
 
-   - Users authenticate by sending their credentials (username and password) to the login endpoint.
+   - Users authenticate by sending their username/email and password to the login endpoint.
    - On successful authentication, the server responds with access and refresh tokens.
 
    ### Login Endpoint
@@ -18,7 +18,7 @@ The Personal Backend uses token-based authentication to secure API endpoints. Th
 
    Request Body:
    {
-       "username": "johndoe",
+       "username_or_email": "johndoe",  // Can be username or email address
        "password": "SecurePass123!"
    }
 

@@ -22,12 +22,29 @@ const apiClient = axios.create({
 });
 
 // Example: User Login
-async function login(username, password) {
+async function login(usernameOrEmail, password) {
   const response = await apiClient.post("/login/", {
-    username,
+    username_or_email: usernameOrEmail,
     password,
   });
   return response.data;
+}
+
+// Usage example
+async function handleLogin() {
+  try {
+    // Can use either username or email
+    const { access, refresh } = await login(
+      "john@example.com",
+      "SecurePass123!"
+    );
+    // Or
+    // const { access, refresh } = await login("johndoe", "SecurePass123!");
+    accessToken = access;
+    refreshToken = refresh;
+  } catch (error) {
+    // Handle login error
+  }
 }
 ```
 
