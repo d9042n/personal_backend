@@ -173,6 +173,9 @@ cython_debug/
 # .idea
 .idea/
 
+# docs_backup
+docs_backup/
+
 # Environment files
 .env.development
 .env.staging
