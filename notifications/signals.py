@@ -39,18 +39,18 @@ def notify_profile_update(
         updated_fields: Optional[Set[str]] = kwargs.get('update_fields')
         
         NotificationService.create_notification(
-            recipient=instance.user,  # Access user directly from profile
+            recipient=instance.users.user,  # Access user through Users model
             notification_type=NotificationTypes.PROFILE_UPDATE,
             message='Your profile has been updated',
             content_object=instance,
             extra_data={
                 'updated_fields': list(updated_fields) if updated_fields else [],
                 'profile_id': instance.id,
-                'username': instance.user.username
+                'username': instance.users.user.username
             }
         )
     except Exception as e:
         logger.error(
-            f"Failed to create profile update notification for user {instance.user.id}: {e}",
+            f"Failed to create profile update notification for user {instance.users.user.id}: {e}",
             exc_info=True
         )
