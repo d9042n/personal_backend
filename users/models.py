@@ -3,13 +3,38 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-from django.contrib.sessions.models import Session
 from django.utils import timezone
-from django.core.exceptions import ValidationError
 from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
 
 from .validators import validate_github_url, validate_linkedin_url, validate_twitter_url, validate_facebook_url, validate_leetcode_url, validate_hackerrank_url, validate_medium_url, validate_stackoverflow_url, validate_portfolio_url, validate_youtube_url, validate_devto_url
+
+
+class UserSessionManager(models.Manager):
+    """Custom manager for UserSession model."""
+
+    def active(self):
+        """Return only active sessions."""
+        return self.filter(is_active=True)
+
+    def expired(self):
+        """Return expired sessions."""
+        return self.filter(expires_at__lt=timezone.now())
+
+    def cleanup_expired(self):
+        """Terminate all expired sessions."""
+        expired = self.expired()
+        count = expired.count()
+        expired.update(is_active=False)
+        return count
+
+    def terminate_all_except(self, session_key):
+        """Terminate all sessions except the specified one."""
+        return self.exclude(session_key=session_key).update(is_active=False)
+
+    def get_user_active_sessions(self, user):
+        """Get all active sessions for a user."""
+        return self.active().filter(user=user).order_by('-last_activity')
 
 
 # Create your models here.
@@ -74,11 +99,6 @@ def create_users(sender, instance, created, **kwargs):
         Profile.objects.create(users=users)
 
 
-@receiver(post_save, sender=User)
-def save_users(sender, instance, **kwargs):
-    instance.users.save()
-
-
 class UserSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
     session_key = models.CharField(max_length=40, unique=True)
@@ -90,6 +110,8 @@ class UserSession(models.Model):
     location = models.CharField(max_length=255, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     expires_at = models.DateTimeField()
+
+    objects = UserSessionManager()
 
     class Meta:
         ordering = ['-last_activity']

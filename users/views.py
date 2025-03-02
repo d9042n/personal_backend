@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -8,14 +8,13 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import UserSession
 from .serializers import UserSerializer, PublicUserSerializer, ProfileSerializer, UserSessionSerializer
 from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
-from django.db.models import Q
 
 # Base class for handling API authentication
 class BaseAuthenticatedView:
@@ -305,10 +304,11 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
 
 class UserLoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @swagger_auto_schema(
         operation_summary="User Login",
-        operation_description="Authenticate a user using username or email.",
+        operation_description="Authenticate a user using username or email and return JWT tokens.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             required=['username_or_email', 'password'],
@@ -333,7 +333,9 @@ class UserLoginView(APIView):
                         "user": {
                             "id": 1,
                             "username": "example_user",
-                            "email": "user@example.com"
+                            "email": "user@example.com",
+                            "first_name": "John",
+                            "last_name": "Doe"
                         }
                     }
                 }
@@ -343,55 +345,99 @@ class UserLoginView(APIView):
         tags=['Authentication']
     )
     def post(self, request):
-        """Handle user login with username or email."""
         username_or_email = request.data.get('username_or_email')
         password = request.data.get('password')
+
+        # Try to authenticate with username
+        user = authenticate(username=username_or_email, password=password)
         
-        if not username_or_email or not password:
+        # If authentication with username fails, try with email
+        if user is None:
+            try:
+                username = User.objects.get(email=username_or_email).username
+                user = authenticate(username=username, password=password)
+            except User.DoesNotExist:
+                user = None
+
+        if user is None:
             return Response(
-                {"detail": "Both username/email and password are required."}, 
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Invalid credentials'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Try to find the user by username or email
-        try:
-            user = User.objects.get(
-                Q(username=username_or_email) | Q(email=username_or_email)
-            )
-            # Authenticate with the username
-            auth_user = authenticate(
-                request, 
-                username=user.username, 
-                password=password
-            )
-            
-            if auth_user is not None:
-                login(request, auth_user)
-                refresh = RefreshToken.for_user(auth_user)
-                return Response({
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'user': UserSerializer(auth_user).data
-                }, status=status.HTTP_200_OK)
-            
+        if not user.is_active:
             return Response(
-                {"detail": "Invalid password."}, 
+                {'error': 'User account is disabled'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-            
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "No user found with this username or email."}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+        # Ensure session exists and get session key
+        if not request.session.session_key:
+            request.session.create()
+        session_key = request.session.session_key
+
+        # Get request metadata
+        user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+        ip_address = self.get_client_ip(request)
+        device_type = self.get_device_type(user_agent_string)
+
+        # Update or create session
+        UserSession.objects.update_or_create(
+            user=user,
+            session_key=session_key,
+            defaults={
+                'ip_address': ip_address,
+                'user_agent': user_agent_string,
+                'device_type': device_type,
+                'expires_at': timezone.now() + timezone.timedelta(days=7),
+                'is_active': True
+            }
+        )
+
+        # Return response with tokens and user data
+        return Response({
+            'refresh': str(refresh),
+            'access': access,
+            'user': UserSerializer(user, context={'limited_fields': True}).data
+        })
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR')
+
+    def get_device_type(self, user_agent_string):
+        from user_agents import parse
+        user_agent = parse(user_agent_string)
+        if user_agent.is_mobile:
+            return 'mobile'
+        elif user_agent.is_tablet:
+            return 'tablet'
+        return 'pc'
 
 
 class UserLogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
 
     @swagger_auto_schema(
         operation_summary="User Logout",
-        operation_description="Log out the user and invalidate the current session.",
+        operation_description="Log out the user by blacklisting their JWT tokens and invalidating the current session.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['refresh_token'],
+            properties={
+                'refresh_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='The refresh token to blacklist'
+                ),
+            }
+        ),
         responses={
             200: openapi.Response(
                 description="Successfully logged out",
@@ -401,25 +447,39 @@ class UserLogoutView(APIView):
                     }
                 }
             ),
+            400: openapi.Response(description="Invalid token."),
             401: openapi.Response(description="Authentication credentials were not provided.")
         },
         tags=['Authentication']
     )
     def post(self, request):
-        """Handle user logout."""
-        if hasattr(request, 'session'):
-            # Invalidate the current session
-            session = UserSession.objects.filter(
-                user=request.user,
-                session_key=request.session.session_key,
-                is_active=True
-            ).first()
-            
-            if session:
-                session.terminate()
+        try:
+            refresh_token = request.data.get('refresh_token')
+            if not refresh_token:
+                return Response(
+                    {'error': 'Refresh token is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        logout(request)
-        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+            # Blacklist the refresh token
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            # Invalidate user session
+            if request.session.session_key:
+                UserSession.objects.filter(
+                    user=request.user,
+                    session_key=request.session.session_key,
+                    is_active=True
+                ).update(is_active=False)
+
+            return Response({'detail': 'Successfully logged out.'})
+
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class UserSessionView(APIView):

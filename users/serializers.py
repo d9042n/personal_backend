@@ -1,22 +1,9 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from django.utils import timezone
+from django.db import transaction
 
 from .models import Users, Profile, UserSession
-
-
-class SocialLinksSerializer(serializers.Serializer):
-    github = serializers.URLField(required=False, allow_null=True)
-    linkedin = serializers.URLField(required=False, allow_null=True)
-    twitter = serializers.URLField(required=False, allow_null=True)
-    facebook = serializers.URLField(required=False, allow_null=True)
-    leetcode = serializers.URLField(required=False, allow_null=True)
-    hackerrank = serializers.URLField(required=False, allow_null=True)
-    medium = serializers.URLField(required=False, allow_null=True)
-    stackoverflow = serializers.URLField(required=False, allow_null=True)
-    portfolio = serializers.URLField(required=False, allow_null=True)
-    youtube = serializers.URLField(required=False, allow_null=True)
-    devto = serializers.URLField(required=False, allow_null=True)
 
 
 class PublicProfileSerializer(serializers.ModelSerializer):
@@ -28,11 +15,16 @@ class PublicProfileSerializer(serializers.ModelSerializer):
         read_only_fields = fields  # All fields read-only for public view
 
     def get_social_links(self, obj):
-        social_fields = ['github', 'linkedin', 'twitter', 'facebook', 'leetcode', 
-                        'hackerrank', 'medium', 'stackoverflow', 'portfolio', 
-                        'youtube', 'devto']
-        social_links = {field: getattr(obj, field) for field in social_fields}
-        return {k: v for k, v in social_links.items() if v is not None}
+        social_fields = [
+            'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+            'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+            'youtube', 'devto'
+        ]
+        return {
+            field: getattr(obj, field) 
+            for field in social_fields 
+            if getattr(obj, field) is not None
+        }
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
@@ -47,7 +39,12 @@ class PublicUserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['is_available', 'badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
+        fields = [
+            'is_available', 'badge', 'name', 'title', 'description',
+            'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+            'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+            'youtube', 'devto'
+        ]
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -71,21 +68,20 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def to_representation(self, instance):
-        # Check if we should return limited fields for anonymous users
         if self.context.get('limited_fields'):
             return {
                 'id': instance.id,
-                'username': instance.username,
-                # Add any other public fields you want to expose
+                'username': instance.username
             }
         return super().to_representation(instance)
 
+    @transaction.atomic
     def create(self, validated_data):
         users_data = validated_data.pop('users')
         profile_data = users_data.pop('profile')
+        password = validated_data.pop('password')
 
         # Create User instance
-        password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
         user.save()
@@ -99,31 +95,28 @@ class UserSerializer(serializers.ModelSerializer):
 
         return user
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         users_data = validated_data.pop('users', None)
 
         # Update User fields
+        if 'password' in validated_data:
+            instance.set_password(validated_data.pop('password'))
         for attr, value in validated_data.items():
-            if attr == 'password':
-                instance.set_password(value)
-            else:
-                setattr(instance, attr, value)
+            setattr(instance, attr, value)
         instance.save()
 
         # Update Users and Profile fields
-        if users_data:
-            users = instance.users
-            profile_data = users_data.pop('profile', None)
+        if users_data and (profile_data := users_data.pop('profile', None)):
+            profile = instance.users.profile
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
 
+            # Update any remaining Users fields
             for attr, value in users_data.items():
-                setattr(users, attr, value)
-            users.save()
-
-            if profile_data:
-                profile = users.profile
-                for attr, value in profile_data.items():
-                    setattr(profile, attr, value)
-                profile.save()
+                setattr(instance.users, attr, value)
+            instance.users.save()
 
         return instance
 
@@ -147,4 +140,4 @@ class UserSessionSerializer(serializers.ModelSerializer):
     def get_time_until_expiry(self, obj):
         if obj.is_expired():
             return 0
-        return (obj.expires_at - timezone.now()).total_seconds()
+        return max(0, (obj.expires_at - timezone.now()).total_seconds())
