@@ -178,17 +178,22 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
                 'name': openapi.Schema(type=openapi.TYPE_STRING),
                 'title': openapi.Schema(type=openapi.TYPE_STRING),
                 'description': openapi.Schema(type=openapi.TYPE_STRING),
-                'github': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'linkedin': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'twitter': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'facebook': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'leetcode': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'hackerrank': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'medium': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'stackoverflow': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'portfolio': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'youtube': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
-                'devto': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                'social_links': openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'github': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'linkedin': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'twitter': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'facebook': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'leetcode': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'hackerrank': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'medium': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'stackoverflow': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'portfolio': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'youtube': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
+                        'devto': openapi.Schema(type=openapi.TYPE_STRING, format='uri')
+                    }
+                )
             }
         ),
         responses={
@@ -227,17 +232,17 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
                 'first_name': openapi.Schema(type=openapi.TYPE_STRING),
                 'last_name': openapi.Schema(type=openapi.TYPE_STRING),
                 'password': openapi.Schema(type=openapi.TYPE_STRING),
-                'users': openapi.Schema(
+                'profile': openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'profile': openapi.Schema(
+                        'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        'badge': openapi.Schema(type=openapi.TYPE_STRING),
+                        'name': openapi.Schema(type=openapi.TYPE_STRING),
+                        'title': openapi.Schema(type=openapi.TYPE_STRING),
+                        'description': openapi.Schema(type=openapi.TYPE_STRING),
+                        'social_links': openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
-                                'is_available': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                'badge': openapi.Schema(type=openapi.TYPE_STRING),
-                                'name': openapi.Schema(type=openapi.TYPE_STRING),
-                                'title': openapi.Schema(type=openapi.TYPE_STRING),
-                                'description': openapi.Schema(type=openapi.TYPE_STRING),
                                 'github': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
                                 'linkedin': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
                                 'twitter': openapi.Schema(type=openapi.TYPE_STRING, format='uri'),
@@ -265,18 +270,24 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
                         "email": "john@example.com",
                         "first_name": "John",
                         "last_name": "Doe",
-                        "users": {
-                            "profile": {
-                                "is_available": True,
-                                "badge": "Available",
-                                "name": "John Doe",
-                                "title": "Senior Developer",
-                                "description": "Full-stack developer",
-                                "social_links": {
-                                    "github": "https://github.com/johndoe",
-                                    "linkedin": "https://linkedin.com/in/johndoe",
-                                    "twitter": "https://twitter.com/johndoe"
-                                }
+                        "profile": {
+                            "is_available": True,
+                            "badge": "Available",
+                            "name": "John Doe",
+                            "title": "Senior Developer",
+                            "description": "Full-stack developer",
+                            "social_links": {
+                                "github": "https://github.com/johndoe",
+                                "linkedin": "https://linkedin.com/in/johndoe",
+                                "twitter": "https://twitter.com/johndoe",
+                                "facebook": "https://facebook.com/johndoe",
+                                "leetcode": "https://leetcode.com/johndoe",
+                                "hackerrank": "https://hackerrank.com/johndoe",
+                                "medium": "https://medium.com/@johndoe",
+                                "stackoverflow": "https://stackoverflow.com/users/123/johndoe",
+                                "portfolio": "https://johndoe.dev",
+                                "youtube": "https://youtube.com/@johndoe",
+                                "devto": "https://dev.to/johndoe"
                             }
                         }
                     }

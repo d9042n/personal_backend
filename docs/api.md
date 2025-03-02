@@ -42,11 +42,11 @@ Retrieve public profile information for any user.
   {
     "username": "string",
     "profile": {
+      "is_available": true,
+      "badge": "string",
       "name": "string",
       "title": "string",
       "description": "string",
-      "badge": "string",
-      "is_available": true,
       "social_links": {
         "github": "string",
         "linkedin": "string",
@@ -87,7 +87,27 @@ Create a new user account.
     "email": "string",
     "password": "string",
     "first_name": "string",
-    "last_name": "string"
+    "last_name": "string",
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
+      }
+    }
   }
   ```
 - **Success Response** (201 Created):
@@ -97,7 +117,27 @@ Create a new user account.
     "username": "string",
     "email": "string",
     "first_name": "string",
-    "last_name": "string"
+    "last_name": "string",
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
+      }
+    }
   }
   ```
 - **Error Response** (400 Bad Request):
@@ -125,14 +165,24 @@ Retrieve details for a specific user.
     "email": "string",
     "first_name": "string",
     "last_name": "string",
-    "users": {
-      "profile": {
-        "is_available": true,
-        "badge": "string",
-        "name": "string",
-        "title": "string",
-        "description": "string",
-        "social_links": {}
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
       }
     }
   }
@@ -159,7 +209,27 @@ Update a user's information.
     "email": "string",
     "first_name": "string",
     "last_name": "string",
-    "password": "string"
+    "password": "string",
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
+      }
+    }
   }
   ```
 - **Success Response** (200 OK):
@@ -169,7 +239,27 @@ Update a user's information.
     "username": "string",
     "email": "string",
     "first_name": "string",
-    "last_name": "string"
+    "last_name": "string",
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
+      }
+    }
   }
   ```
 - **Error Responses**:
@@ -193,26 +283,24 @@ Update specific fields of a user's information.
     "first_name": "string",
     "last_name": "string",
     "password": "string",
-    "users": {
-      "profile": {
-        "is_available": true,
-        "badge": "string",
-        "name": "string",
-        "title": "string",
-        "description": "string",
-        "social_links": {
-          "github": "string",
-          "linkedin": "string",
-          "twitter": "string",
-          "facebook": "string",
-          "leetcode": "string",
-          "hackerrank": "string",
-          "medium": "string",
-          "stackoverflow": "string",
-          "portfolio": "string",
-          "youtube": "string",
-          "devto": "string"
-        }
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
       }
     }
   }
@@ -225,14 +313,24 @@ Update specific fields of a user's information.
     "email": "string",
     "first_name": "string",
     "last_name": "string",
-    "users": {
-      "profile": {
-        "is_available": true,
-        "badge": "string",
-        "name": "string",
-        "title": "string",
-        "description": "string",
-        "social_links": {}
+    "profile": {
+      "is_available": true,
+      "badge": "string",
+      "name": "string",
+      "title": "string",
+      "description": "string",
+      "social_links": {
+        "github": "string",
+        "linkedin": "string",
+        "twitter": "string",
+        "facebook": "string",
+        "leetcode": "string",
+        "hackerrank": "string",
+        "medium": "string",
+        "stackoverflow": "string",
+        "portfolio": "string",
+        "youtube": "string",
+        "devto": "string"
       }
     }
   }
@@ -315,17 +413,19 @@ Update a user's profile information.
     "name": "string",
     "title": "string",
     "description": "string",
-    "github": "string",
-    "linkedin": "string",
-    "twitter": "string",
-    "facebook": "string",
-    "leetcode": "string",
-    "hackerrank": "string",
-    "medium": "string",
-    "stackoverflow": "string",
-    "portfolio": "string",
-    "youtube": "string",
-    "devto": "string"
+    "social_links": {
+      "github": "string",
+      "linkedin": "string",
+      "twitter": "string",
+      "facebook": "string",
+      "leetcode": "string",
+      "hackerrank": "string",
+      "medium": "string",
+      "stackoverflow": "string",
+      "portfolio": "string",
+      "youtube": "string",
+      "devto": "string"
+    }
   }
   ```
 - **Success Response** (200 OK):

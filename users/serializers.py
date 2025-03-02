@@ -6,25 +6,75 @@ from django.db import transaction
 from .models import Users, Profile, UserSession
 
 
-class PublicProfileSerializer(serializers.ModelSerializer):
-    social_links = serializers.SerializerMethodField()
+class SocialLinksSerializer(serializers.Serializer):
+    github = serializers.URLField(required=False, allow_null=True)
+    linkedin = serializers.URLField(required=False, allow_null=True)
+    twitter = serializers.URLField(required=False, allow_null=True)
+    facebook = serializers.URLField(required=False, allow_null=True)
+    leetcode = serializers.URLField(required=False, allow_null=True)
+    hackerrank = serializers.URLField(required=False, allow_null=True)
+    medium = serializers.URLField(required=False, allow_null=True)
+    stackoverflow = serializers.URLField(required=False, allow_null=True)
+    portfolio = serializers.URLField(required=False, allow_null=True)
+    youtube = serializers.URLField(required=False, allow_null=True)
+    devto = serializers.URLField(required=False, allow_null=True)
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    social_links = SocialLinksSerializer(required=False)
 
     class Meta:
         model = Profile
-        fields = ['is_available', 'badge', 'name', 'title', 'description', 'social_links']
-        read_only_fields = fields  # All fields read-only for public view
+        fields = [
+            'is_available', 'badge', 'name', 'title', 'description',
+            'social_links'
+        ]
 
-    def get_social_links(self, obj):
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
         social_fields = [
             'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
             'hackerrank', 'medium', 'stackoverflow', 'portfolio',
             'youtube', 'devto'
         ]
-        return {
-            field: getattr(obj, field) 
-            for field in social_fields 
-            if getattr(obj, field) is not None
-        }
+        social_links = {}
+        for field in social_fields:
+            value = getattr(instance, field)
+            if value:  # Only include non-null and non-empty values
+                social_links[field] = value
+        ret['social_links'] = social_links
+        return ret
+
+    def _update_social_links(self, instance, social_links):
+        """Helper method to update social links"""
+        if social_links:
+            social_fields = [
+                'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+                'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+                'youtube', 'devto'
+            ]
+            for field in social_fields:
+                if field in social_links:
+                    setattr(instance, field, social_links.get(field))
+
+    def update(self, instance, validated_data):
+        social_links = validated_data.pop('social_links', None)
+        
+        # Update regular fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Update social links if provided
+        if social_links:
+            self._update_social_links(instance, social_links)
+        
+        instance.save()
+        return instance
+
+
+class PublicProfileSerializer(ProfileSerializer):
+    class Meta(ProfileSerializer.Meta):
+        read_only_fields = fields = ProfileSerializer.Meta.fields
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
@@ -36,32 +86,13 @@ class PublicUserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = [
-            'is_available', 'badge', 'name', 'title', 'description',
-            'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
-            'hackerrank', 'medium', 'stackoverflow', 'portfolio',
-            'youtube', 'devto'
-        ]
-
-
-class UsersSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
-
-    class Meta:
-        model = Users
-        fields = ['profile', 'created_at', 'updated_at']
-
-
 class UserSerializer(serializers.ModelSerializer):
-    users = UsersSerializer()
+    profile = ProfileSerializer(source='users.profile')
     password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'users']
+        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'profile']
         extra_kwargs = {
             'password': {'write_only': True},
             'email': {'required': True}
@@ -75,10 +106,38 @@ class UserSerializer(serializers.ModelSerializer):
             }
         return super().to_representation(instance)
 
+    def _update_profile(self, profile, profile_data):
+        """Helper method to update profile"""
+        if not profile_data:
+            return
+
+        social_links = profile_data.pop('social_links', None)
+        
+        # Update regular profile fields
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        
+        # Update social links if provided
+        if social_links:
+            social_fields = [
+                'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+                'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+                'youtube', 'devto'
+            ]
+            for field in social_fields:
+                if field in social_links:
+                    setattr(profile, field, social_links.get(field))
+        
+        profile.save()
+
     @transaction.atomic
     def create(self, validated_data):
-        users_data = validated_data.pop('users')
-        profile_data = users_data.pop('profile')
+        profile_data = None
+        if 'users' in validated_data:
+            profile_data = validated_data.pop('users', {}).get('profile', {})
+        elif 'profile' in validated_data:
+            profile_data = validated_data.pop('profile', {})
+            
         password = validated_data.pop('password')
 
         # Create User instance
@@ -88,16 +147,18 @@ class UserSerializer(serializers.ModelSerializer):
 
         # Profile is automatically created via signal
         # Update profile with provided data
-        profile = user.users.profile
-        for attr, value in profile_data.items():
-            setattr(profile, attr, value)
-        profile.save()
+        if profile_data:
+            self._update_profile(user.users.profile, profile_data)
 
         return user
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        users_data = validated_data.pop('users', None)
+        profile_data = None
+        if 'users' in validated_data:
+            profile_data = validated_data.pop('users', {}).get('profile', {})
+        elif 'profile' in validated_data:
+            profile_data = validated_data.pop('profile', {})
 
         # Update User fields
         if 'password' in validated_data:
@@ -106,17 +167,8 @@ class UserSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
-        # Update Users and Profile fields
-        if users_data and (profile_data := users_data.pop('profile', None)):
-            profile = instance.users.profile
-            for attr, value in profile_data.items():
-                setattr(profile, attr, value)
-            profile.save()
-
-            # Update any remaining Users fields
-            for attr, value in users_data.items():
-                setattr(instance.users, attr, value)
-            instance.users.save()
+        # Update Profile fields
+        self._update_profile(instance.users.profile, profile_data)
 
         return instance
 
