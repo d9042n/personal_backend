@@ -1,20 +1,26 @@
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
-from django.contrib.auth import authenticate
-from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import UserSession
-from .serializers import UserSerializer, PublicUserSerializer, ProfileSerializer, UserSessionSerializer
-from notifications.services import NotificationService
+
 from notifications.constants import NotificationTypes
+from notifications.services import NotificationService
+from .models import UserSession
+from .serializers import (
+    ProfileSerializer,
+    PublicUserSerializer,
+    UserSerializer,
+    UserSessionSerializer
+)
 
 # Base class for handling API authentication
 class BaseAuthenticatedView:

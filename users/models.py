@@ -7,11 +7,16 @@ from django.utils import timezone
 from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
 
-from .validators import validate_github_url, validate_linkedin_url, validate_twitter_url, validate_facebook_url, validate_leetcode_url, validate_hackerrank_url, validate_medium_url, validate_stackoverflow_url, validate_portfolio_url, validate_youtube_url, validate_devto_url
+from .validators import (
+    validate_github_url, validate_linkedin_url, validate_twitter_url,
+    validate_facebook_url, validate_leetcode_url, validate_hackerrank_url,
+    validate_medium_url, validate_stackoverflow_url, validate_portfolio_url,
+    validate_youtube_url, validate_devto_url
+)
 
 
 class UserSessionManager(models.Manager):
-    """Custom manager for UserSession model."""
+    """Manager for handling UserSession operations."""
 
     def active(self):
         """Return only active sessions."""
@@ -22,30 +27,48 @@ class UserSessionManager(models.Manager):
         return self.filter(expires_at__lt=timezone.now())
 
     def cleanup_expired(self):
-        """Terminate all expired sessions."""
+        """Terminate all expired sessions and return count of terminated sessions."""
         expired = self.expired()
         count = expired.count()
         expired.update(is_active=False)
         return count
 
     def terminate_all_except(self, session_key):
-        """Terminate all sessions except the specified one."""
+        """
+        Terminate all sessions except the specified one.
+        
+        Args:
+            session_key (str): The session key to preserve
+            
+        Returns:
+            int: Number of sessions terminated
+        """
         return self.exclude(session_key=session_key).update(is_active=False)
 
     def get_user_active_sessions(self, user):
-        """Get all active sessions for a user."""
+        """
+        Get all active sessions for a user.
+        
+        Args:
+            user (User): The user whose sessions to retrieve
+            
+        Returns:
+            QuerySet: Active sessions ordered by last activity
+        """
         return self.active().filter(user=user).order_by('-last_activity')
 
 
-# Create your models here.
-
 class Users(models.Model):
+    """
+    Extended user profile model that maintains a one-to-one relationship with Django's User model.
+    This model stores additional user-specific data not covered by the default User model.
+    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='users')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username}"
+        return self.user.username
 
     class Meta:
         verbose_name = 'User'
@@ -57,6 +80,10 @@ class Users(models.Model):
 
 
 class Profile(models.Model):
+    """
+    User profile model storing extended profile information and social media links.
+    Each profile is associated with exactly one Users instance.
+    """
     users = models.OneToOneField(Users, on_delete=models.CASCADE, related_name='profile')
     is_available = models.BooleanField(
         default=True,
@@ -68,7 +95,7 @@ class Profile(models.Model):
     title = models.CharField(max_length=100, default="", blank=True)
     description = models.TextField(default="", blank=True)
     
-    # Social Links
+    # Social Links with validation
     github = models.URLField(null=True, blank=True, validators=[validate_github_url])
     linkedin = models.URLField(null=True, blank=True, validators=[validate_linkedin_url])
     twitter = models.URLField(null=True, blank=True, validators=[validate_twitter_url])
@@ -94,12 +121,25 @@ class Profile(models.Model):
 
 @receiver(post_save, sender=User)
 def create_users(sender, instance, created, **kwargs):
+    """
+    Signal handler to automatically create Users and Profile instances when a new User is created.
+    
+    Args:
+        sender: The model class (User)
+        instance: The actual instance being saved
+        created: Boolean; True if a new record was created
+        **kwargs: Additional keyword arguments
+    """
     if created:
         users = Users.objects.create(user=instance)
         Profile.objects.create(users=users)
 
 
 class UserSession(models.Model):
+    """
+    Model to track user sessions with additional metadata about the session.
+    Includes information about the device, location, and session status.
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
     session_key = models.CharField(max_length=40, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -122,18 +162,22 @@ class UserSession(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        """Override save to ensure expires_at is set."""
         if not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(minutes=30)
         super().save(*args, **kwargs)
 
     def is_expired(self):
+        """Check if the session has expired."""
         return timezone.now() >= self.expires_at
 
     def extend_session(self, hours=24):
+        """Extend the session expiration time."""
         self.expires_at = timezone.now() + timezone.timedelta(hours=hours)
         self.save()
 
     def terminate(self):
+        """Terminate the session and notify the user."""
         self.is_active = False
         self.save()
         NotificationService.create_notification(

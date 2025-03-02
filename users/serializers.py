@@ -7,6 +7,7 @@ from .models import Users, Profile, UserSession
 
 
 class SocialLinksSerializer(serializers.Serializer):
+    """Serializer for handling social media links in user profiles."""
     github = serializers.URLField(required=False, allow_null=True)
     linkedin = serializers.URLField(required=False, allow_null=True)
     twitter = serializers.URLField(required=False, allow_null=True)
@@ -21,6 +22,7 @@ class SocialLinksSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    """Serializer for user profile information including social links."""
     social_links = SocialLinksSerializer(required=False)
 
     class Meta:
@@ -31,22 +33,29 @@ class ProfileSerializer(serializers.ModelSerializer):
         ]
 
     def to_representation(self, instance):
+        """Convert profile instance to JSON, including only non-empty social links."""
         ret = super().to_representation(instance)
         social_fields = [
             'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
             'hackerrank', 'medium', 'stackoverflow', 'portfolio',
             'youtube', 'devto'
         ]
-        social_links = {}
-        for field in social_fields:
-            value = getattr(instance, field)
-            if value:  # Only include non-null and non-empty values
-                social_links[field] = value
+        social_links = {
+            field: getattr(instance, field)
+            for field in social_fields
+            if getattr(instance, field)
+        }
         ret['social_links'] = social_links
         return ret
 
     def _update_social_links(self, instance, social_links):
-        """Helper method to update social links"""
+        """
+        Update social media links for a profile.
+        
+        Args:
+            instance (Profile): Profile instance to update
+            social_links (dict): Dictionary of social media links
+        """
         if social_links:
             social_fields = [
                 'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
@@ -58,6 +67,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                     setattr(instance, field, social_links.get(field))
 
     def update(self, instance, validated_data):
+        """Update profile instance with validated data."""
         social_links = validated_data.pop('social_links', None)
         
         # Update regular fields
@@ -73,11 +83,13 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class PublicProfileSerializer(ProfileSerializer):
+    """Read-only serializer for public profile information."""
     class Meta(ProfileSerializer.Meta):
         read_only_fields = fields = ProfileSerializer.Meta.fields
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
+    """Read-only serializer for public user information."""
     profile = PublicProfileSerializer(source='users.profile')
 
     class Meta:
@@ -87,6 +99,7 @@ class PublicUserSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Serializer for complete user information including profile."""
     profile = ProfileSerializer(source='users.profile')
     password = serializers.CharField(write_only=True, required=False)
 
@@ -99,6 +112,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def to_representation(self, instance):
+        """Convert user instance to JSON, with optional limited fields."""
         if self.context.get('limited_fields'):
             return {
                 'id': instance.id,
@@ -107,7 +121,13 @@ class UserSerializer(serializers.ModelSerializer):
         return super().to_representation(instance)
 
     def _update_profile(self, profile, profile_data):
-        """Helper method to update profile"""
+        """
+        Update profile data for a user.
+        
+        Args:
+            profile (Profile): Profile instance to update
+            profile_data (dict): Dictionary of profile data
+        """
         if not profile_data:
             return
 
@@ -132,6 +152,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        """Create a new user with profile information."""
         profile_data = None
         if 'users' in validated_data:
             profile_data = validated_data.pop('users', {}).get('profile', {})
@@ -154,6 +175,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        """Update an existing user and their profile."""
         profile_data = None
         if 'users' in validated_data:
             profile_data = validated_data.pop('users', {}).get('profile', {})
@@ -174,6 +196,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserSessionSerializer(serializers.ModelSerializer):
+    """Serializer for user session information."""
     duration = serializers.SerializerMethodField()
     time_until_expiry = serializers.SerializerMethodField()
     
@@ -187,9 +210,11 @@ class UserSessionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_duration(self, obj):
+        """Calculate the duration of the session in seconds."""
         return (obj.last_activity - obj.created_at).total_seconds()
 
     def get_time_until_expiry(self, obj):
+        """Calculate the remaining time until session expiry in seconds."""
         if obj.is_expired():
             return 0
         return max(0, (obj.expires_at - timezone.now()).total_seconds())
