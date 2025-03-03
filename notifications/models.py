@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -10,7 +9,25 @@ from .constants import NotificationTypes
 
 class Notification(models.Model):
     """
-    Model to handle system notifications for users
+    Model to handle system notifications for users.
+    
+    This model stores notifications that can be triggered by various system events,
+    user actions, or automated processes. It supports generic relations to allow
+    notifications to reference any model object.
+    
+    Attributes:
+        recipient: User who will receive the notification
+        actor: User who triggered the notification (optional)
+        content_type: Type of the related object for generic relation
+        object_id: ID of the related object for generic relation
+        content_object: The actual related object (GenericForeignKey)
+        notification_type: Type of notification (from NotificationTypes)
+        message: The notification message
+        data: Additional JSON data for the notification
+        is_read: Whether the notification has been read
+        is_deleted: Soft deletion status
+        created_at: When the notification was created
+        updated_at: When the notification was last updated
     """
     # Core fields
     recipient = models.ForeignKey(

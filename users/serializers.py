@@ -1,10 +1,13 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from django.utils import timezone
+from django.db import transaction
 
-from .models import Users, Profile
+from .models import Users, Profile, UserSession
 
 
 class SocialLinksSerializer(serializers.Serializer):
+    """Serializer for handling social media links in user profiles."""
     github = serializers.URLField(required=False, allow_null=True)
     linkedin = serializers.URLField(required=False, allow_null=True)
     twitter = serializers.URLField(required=False, allow_null=True)
@@ -18,23 +21,75 @@ class SocialLinksSerializer(serializers.Serializer):
     devto = serializers.URLField(required=False, allow_null=True)
 
 
-class PublicProfileSerializer(serializers.ModelSerializer):
-    social_links = serializers.SerializerMethodField()
+class ProfileSerializer(serializers.ModelSerializer):
+    """Serializer for user profile information including social links."""
+    social_links = SocialLinksSerializer(required=False)
 
     class Meta:
         model = Profile
-        fields = ['is_available', 'badge', 'name', 'title', 'description', 'social_links']
-        read_only_fields = fields  # All fields read-only for public view
+        fields = [
+            'is_available', 'badge', 'name', 'title', 'description',
+            'social_links'
+        ]
 
-    def get_social_links(self, obj):
-        social_fields = ['github', 'linkedin', 'twitter', 'facebook', 'leetcode', 
-                        'hackerrank', 'medium', 'stackoverflow', 'portfolio', 
-                        'youtube', 'devto']
-        social_links = {field: getattr(obj, field) for field in social_fields}
-        return {k: v for k, v in social_links.items() if v is not None}
+    def to_representation(self, instance):
+        """Convert profile instance to JSON, including only non-empty social links."""
+        ret = super().to_representation(instance)
+        social_fields = [
+            'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+            'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+            'youtube', 'devto'
+        ]
+        social_links = {
+            field: getattr(instance, field)
+            for field in social_fields
+            if getattr(instance, field)
+        }
+        ret['social_links'] = social_links
+        return ret
+
+    def _update_social_links(self, instance, social_links):
+        """
+        Update social media links for a profile.
+        
+        Args:
+            instance (Profile): Profile instance to update
+            social_links (dict): Dictionary of social media links
+        """
+        if social_links:
+            social_fields = [
+                'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+                'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+                'youtube', 'devto'
+            ]
+            for field in social_fields:
+                if field in social_links:
+                    setattr(instance, field, social_links.get(field))
+
+    def update(self, instance, validated_data):
+        """Update profile instance with validated data."""
+        social_links = validated_data.pop('social_links', None)
+        
+        # Update regular fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Update social links if provided
+        if social_links:
+            self._update_social_links(instance, social_links)
+        
+        instance.save()
+        return instance
+
+
+class PublicProfileSerializer(ProfileSerializer):
+    """Read-only serializer for public profile information."""
+    class Meta(ProfileSerializer.Meta):
+        read_only_fields = fields = ProfileSerializer.Meta.fields
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
+    """Read-only serializer for public user information."""
     profile = PublicProfileSerializer(source='users.profile')
 
     class Meta:
@@ -43,85 +98,123 @@ class PublicUserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ['is_available', 'badge', 'name', 'title', 'description', 'github', 'linkedin', 'twitter']
-
-
-class UsersSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
-
-    class Meta:
-        model = Users
-        fields = ['profile', 'created_at', 'updated_at']
-
-
 class UserSerializer(serializers.ModelSerializer):
-    users = UsersSerializer()
+    """Serializer for complete user information including profile."""
+    profile = ProfileSerializer(source='users.profile')
     password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'users']
+        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name', 'profile']
         extra_kwargs = {
             'password': {'write_only': True},
             'email': {'required': True}
         }
 
     def to_representation(self, instance):
-        # Check if we should return limited fields for anonymous users
+        """Convert user instance to JSON, with optional limited fields."""
         if self.context.get('limited_fields'):
             return {
                 'id': instance.id,
-                'username': instance.username,
-                # Add any other public fields you want to expose
+                'username': instance.username
             }
         return super().to_representation(instance)
 
+    def _update_profile(self, profile, profile_data):
+        """
+        Update profile data for a user.
+        
+        Args:
+            profile (Profile): Profile instance to update
+            profile_data (dict): Dictionary of profile data
+        """
+        if not profile_data:
+            return
+
+        social_links = profile_data.pop('social_links', None)
+        
+        # Update regular profile fields
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        
+        # Update social links if provided
+        if social_links:
+            social_fields = [
+                'github', 'linkedin', 'twitter', 'facebook', 'leetcode',
+                'hackerrank', 'medium', 'stackoverflow', 'portfolio',
+                'youtube', 'devto'
+            ]
+            for field in social_fields:
+                if field in social_links:
+                    setattr(profile, field, social_links.get(field))
+        
+        profile.save()
+
+    @transaction.atomic
     def create(self, validated_data):
-        users_data = validated_data.pop('users')
-        profile_data = users_data.pop('profile')
+        """Create a new user with profile information."""
+        profile_data = None
+        if 'users' in validated_data:
+            profile_data = validated_data.pop('users', {}).get('profile', {})
+        elif 'profile' in validated_data:
+            profile_data = validated_data.pop('profile', {})
+            
+        password = validated_data.pop('password')
 
         # Create User instance
-        password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
         user.save()
 
         # Profile is automatically created via signal
         # Update profile with provided data
-        profile = user.users.profile
-        for attr, value in profile_data.items():
-            setattr(profile, attr, value)
-        profile.save()
+        if profile_data:
+            self._update_profile(user.users.profile, profile_data)
 
         return user
 
+    @transaction.atomic
     def update(self, instance, validated_data):
-        users_data = validated_data.pop('users', None)
+        """Update an existing user and their profile."""
+        profile_data = None
+        if 'users' in validated_data:
+            profile_data = validated_data.pop('users', {}).get('profile', {})
+        elif 'profile' in validated_data:
+            profile_data = validated_data.pop('profile', {})
 
         # Update User fields
+        if 'password' in validated_data:
+            instance.set_password(validated_data.pop('password'))
         for attr, value in validated_data.items():
-            if attr == 'password':
-                instance.set_password(value)
-            else:
-                setattr(instance, attr, value)
+            setattr(instance, attr, value)
         instance.save()
 
-        # Update Users and Profile fields
-        if users_data:
-            users = instance.users
-            profile_data = users_data.pop('profile', None)
-
-            for attr, value in users_data.items():
-                setattr(users, attr, value)
-            users.save()
-
-            if profile_data:
-                profile = users.profile
-                for attr, value in profile_data.items():
-                    setattr(profile, attr, value)
-                profile.save()
+        # Update Profile fields
+        self._update_profile(instance.users.profile, profile_data)
 
         return instance
+
+
+class UserSessionSerializer(serializers.ModelSerializer):
+    """Serializer for user session information."""
+    duration = serializers.SerializerMethodField()
+    time_until_expiry = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserSession
+        fields = [
+            'id', 'session_key', 'created_at', 'last_activity', 
+            'ip_address', 'user_agent', 'device_type', 'location',
+            'is_active', 'expires_at', 'duration', 'time_until_expiry'
+        ]
+        read_only_fields = fields
+
+    def get_duration(self, obj):
+        """Calculate the duration of the session in seconds."""
+        return (obj.last_activity - obj.created_at).total_seconds()
+
+    def get_time_until_expiry(self, obj):
+        """Calculate the remaining time until session expiry in seconds."""
+        if obj.is_expired():
+            return 0
+        return max(0, (obj.expires_at - timezone.now()).total_seconds())

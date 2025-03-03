@@ -1,72 +1,103 @@
 import re
-
+from functools import partial
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from .constants import UserConstants
 
 
-def validate_github_url(value):
-    """Validate GitHub profile URL format"""
-    if value and not re.match(UserConstants.GITHUB_URL_PATTERN, value):
-        raise ValidationError(_('Invalid GitHub URL format'))
+def validate_url_pattern(value, pattern, platform_name):
+    """
+    Generic URL validator for social media profiles.
+    
+    Args:
+        value (str): The URL to validate
+        pattern (str): Regular expression pattern to match against
+        platform_name (str): Name of the platform for error messages
+        
+    Raises:
+        ValidationError: If the URL format is invalid for the given platform
+    """
+    if value and not re.match(pattern, value):
+        raise ValidationError(_(f'Invalid {platform_name} URL format'))
 
 
-def validate_linkedin_url(value):
-    """Validate LinkedIn profile URL format"""
-    if value and not re.match(UserConstants.LINKEDIN_URL_PATTERN, value):
-        raise ValidationError(_('Invalid LinkedIn URL format'))
+# Platform-specific validators using partial application
+validate_github_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.GITHUB_URL_PATTERN,
+    platform_name='GitHub'
+)
 
+validate_linkedin_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.LINKEDIN_URL_PATTERN,
+    platform_name='LinkedIn'
+)
 
-def validate_twitter_url(value):
-    """Validate Twitter profile URL format"""
-    if value and not re.match(UserConstants.TWITTER_URL_PATTERN, value):
-        raise ValidationError(_('Invalid Twitter URL format'))
+validate_twitter_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.TWITTER_URL_PATTERN,
+    platform_name='Twitter'
+)
 
+validate_facebook_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.FACEBOOK_URL_PATTERN,
+    platform_name='Facebook'
+)
 
-def validate_facebook_url(value):
-    """Validate Facebook profile URL format"""
-    if value and not re.match(UserConstants.FACEBOOK_URL_PATTERN, value):
-        raise ValidationError(_('Invalid Facebook URL format'))
+validate_leetcode_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.LEETCODE_URL_PATTERN,
+    platform_name='LeetCode'
+)
 
+validate_hackerrank_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.HACKERRANK_URL_PATTERN,
+    platform_name='HackerRank'
+)
 
-def validate_leetcode_url(value):
-    """Validate LeetCode profile URL format"""
-    if value and not re.match(UserConstants.LEETCODE_URL_PATTERN, value):
-        raise ValidationError(_('Invalid LeetCode URL format'))
+validate_medium_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.MEDIUM_URL_PATTERN,
+    platform_name='Medium'
+)
 
+validate_stackoverflow_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.STACKOVERFLOW_URL_PATTERN,
+    platform_name='Stack Overflow'
+)
 
-def validate_hackerrank_url(value):
-    """Validate HackerRank profile URL format"""
-    if value and not re.match(UserConstants.HACKERRANK_URL_PATTERN, value):
-        raise ValidationError(_('Invalid HackerRank URL format'))
+validate_portfolio_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.PORTFOLIO_URL_PATTERN,
+    platform_name='Portfolio'
+)
 
+validate_youtube_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.YOUTUBE_URL_PATTERN,
+    platform_name='YouTube'
+)
 
-def validate_medium_url(value):
-    """Validate Medium profile URL format"""
-    if value and not re.match(UserConstants.MEDIUM_URL_PATTERN, value):
-        raise ValidationError(_('Invalid Medium URL format'))
+validate_devto_url = partial(
+    validate_url_pattern,
+    pattern=UserConstants.DEVTO_URL_PATTERN,
+    platform_name='Dev.to'
+)
 
-
-def validate_stackoverflow_url(value):
-    """Validate Stack Overflow profile URL format"""
-    if value and not re.match(UserConstants.STACKOVERFLOW_URL_PATTERN, value):
-        raise ValidationError(_('Invalid Stack Overflow URL format'))
-
-
-def validate_portfolio_url(value):
-    """Validate personal portfolio URL format"""
-    if value and not re.match(UserConstants.PORTFOLIO_URL_PATTERN, value):
-        raise ValidationError(_('Invalid portfolio URL format'))
-
-
-def validate_youtube_url(value):
-    """Validate YouTube channel URL format"""
-    if value and not re.match(UserConstants.YOUTUBE_URL_PATTERN, value):
-        raise ValidationError(_('Invalid YouTube URL format'))
-
-
-def validate_devto_url(value):
-    """Validate Dev.to profile URL format"""
-    if value and not re.match(UserConstants.DEVTO_URL_PATTERN, value):
-        raise ValidationError(_('Invalid Dev.to URL format'))
+# Add docstrings to each validator
+validate_github_url.__doc__ = "Validate GitHub profile URL format"
+validate_linkedin_url.__doc__ = "Validate LinkedIn profile URL format"
+validate_twitter_url.__doc__ = "Validate Twitter profile URL format"
+validate_facebook_url.__doc__ = "Validate Facebook profile URL format"
+validate_leetcode_url.__doc__ = "Validate LeetCode profile URL format"
+validate_hackerrank_url.__doc__ = "Validate HackerRank profile URL format"
+validate_medium_url.__doc__ = "Validate Medium profile URL format"
+validate_stackoverflow_url.__doc__ = "Validate Stack Overflow profile URL format"
+validate_portfolio_url.__doc__ = "Validate portfolio website URL format"
+validate_youtube_url.__doc__ = "Validate YouTube channel URL format"
+validate_devto_url.__doc__ = "Validate Dev.to profile URL format"

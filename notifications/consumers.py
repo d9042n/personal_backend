@@ -1,74 +1,136 @@
 import json
+from typing import Optional, Dict, Any, Union
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+import logging
+
+from .models import Notification
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        # Check if authentication is required and user is anonymous
-        if settings.API_REQUIRE_AUTH and isinstance(self.scope["user"], AnonymousUser):
-            await self.close()
-            return
+    """
+    WebSocket consumer for handling real-time notifications.
+    
+    This consumer manages WebSocket connections for real-time notification delivery.
+    It handles user authentication, connection management, and notification message
+    processing.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_id: Optional[int] = None
+        self.room_group_name: Optional[str] = None
 
-        # If authentication is not required but user is anonymous, only allow connection
-        # but don't set up notifications
-        if isinstance(self.scope["user"], AnonymousUser):
-            await self.accept()
-            return
+    async def connect(self) -> None:
+        """
+        Handle WebSocket connection.
+        
+        Authenticates the user and sets up the notification channel if authorized.
+        Closes the connection for unauthorized users when authentication is required.
+        """
+        try:
+            # Check if authentication is required and user is anonymous
+            if settings.API_REQUIRE_AUTH and isinstance(self.scope["user"], AnonymousUser):
+                await self.close()
+                return
 
-        self.user_id = self.scope["user"].id
-        self.room_group_name = f"user_notifications_{self.user_id}"
+            # If authentication is not required but user is anonymous, only allow connection
+            # but don't set up notifications
+            if isinstance(self.scope["user"], AnonymousUser):
+                await self.accept()
+                return
 
-        # Join room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+            self.user_id = self.scope["user"].id
+            self.room_group_name = f"user_notifications_{self.user_id}"
 
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name'):
-            # Leave room group
-            await self.channel_layer.group_discard(
+            # Join room group
+            await self.channel_layer.group_add(
                 self.room_group_name,
                 self.channel_name
             )
 
-    async def receive(self, text_data):
-        if isinstance(self.scope["user"], AnonymousUser):
-            return
+            await self.accept()
+        except Exception as e:
+            logger.error(f"Error in WebSocket connection: {e}", exc_info=True)
+            await self.close()
 
-        text_data_json = json.loads(text_data)
-        message_type = text_data_json.get("type")
-
-        if message_type == "mark_read":
-            notification_id = text_data_json.get("notification_id")
-            await self.mark_notification_as_read(notification_id)
-
-    async def notification_message(self, event):
-        """Handle incoming notification messages"""
-        if isinstance(self.scope["user"], AnonymousUser):
-            return
-
-        data = event["data"]
+    async def disconnect(self, close_code: int) -> None:
+        """
+        Handle WebSocket disconnection.
         
-        # Send notification to WebSocket with specific handling for profile updates
-        await self.send(text_data=json.dumps({
-            "type": data["type"],
-            "message": data["message"],
-            "id": data["id"],
-            "created_at": data["created_at"],
-            "profile_update": data.get("profile_update"),
-            "data": data["data"]
-        }))
+        Removes the user from the notification channel group.
+        
+        Args:
+            close_code: WebSocket close code
+        """
+        try:
+            if hasattr(self, 'room_group_name'):
+                # Leave room group
+                await self.channel_layer.group_discard(
+                    self.room_group_name,
+                    self.channel_name
+                )
+        except Exception as e:
+            logger.error(f"Error in WebSocket disconnection: {e}", exc_info=True)
+
+    async def receive(self, text_data: str) -> None:
+        """
+        Handle incoming WebSocket messages.
+        
+        Currently supports marking notifications as read.
+        
+        Args:
+            text_data: JSON string containing message data
+        """
+        if isinstance(self.scope["user"], AnonymousUser):
+            return
+
+        try:
+            text_data_json = json.loads(text_data)
+            message_type = text_data_json.get("type")
+
+            if message_type == "mark_read":
+                notification_id = text_data_json.get("notification_id")
+                if notification_id:
+                    await self.mark_notification_as_read(notification_id)
+        except json.JSONDecodeError:
+            logger.error("Invalid JSON received in WebSocket message")
+        except Exception as e:
+            logger.error(f"Error processing WebSocket message: {e}", exc_info=True)
+
+    async def notification_message(self, event: Dict[str, Any]) -> None:
+        """
+        Handle incoming notification messages.
+        
+        Sends notifications to connected WebSocket clients.
+        
+        Args:
+            event: Dictionary containing notification data
+        """
+        if isinstance(self.scope["user"], AnonymousUser):
+            return
+
+        try:
+            data = event["data"]
+            await self.send(text_data=json.dumps(data))
+        except Exception as e:
+            logger.error(f"Error sending notification message: {e}", exc_info=True)
 
     @database_sync_to_async
-    def mark_notification_as_read(self, notification_id):
-        from .models import Notification
+    def mark_notification_as_read(self, notification_id: Union[int, str]) -> None:
+        """
+        Mark a notification as read.
+        
+        Args:
+            notification_id: ID of the notification to mark as read
+        """
         try:
             notification = Notification.objects.get(
                 id=notification_id,
@@ -76,4 +138,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             )
             notification.mark_as_read()
         except Notification.DoesNotExist:
-            pass
+            logger.warning(f"Notification {notification_id} not found for user {self.user_id}")
+        except Exception as e:
+            logger.error(f"Error marking notification as read: {e}", exc_info=True)

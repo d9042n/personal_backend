@@ -1,338 +1,157 @@
-# 🚀 Personal Backend
+# Personal Backend 🚀
 
-A robust and scalable backend service providing user management, real-time notifications, and profile handling through a RESTful API and WebSocket integration.
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![Django](https://img.shields.io/badge/django-4.2-green)](https://www.djangoproject.com/)
+[![DRF](https://img.shields.io/badge/DRF-3.15-red)](https://www.django-rest-framework.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://www.docker.com/)
+[![Celery](https://img.shields.io/badge/celery-5.4-brightgreen)](https://docs.celeryq.dev/)
+[![Channels](https://img.shields.io/badge/channels-4.2-purple)](https://channels.readthedocs.io/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## 📋 Table of Contents
+A robust and scalable backend service built with Django REST Framework, providing a comprehensive suite of APIs for user management, real-time notifications, and more. This project follows modern development practices with Docker support for development, staging, and production environments.
 
-- [Features](#-features)
-- [Architecture](#-architecture)
-- [Getting Started](#-getting-started)
-- [Environment Setup](#-environment-setup)
-- [API Documentation](#-api-documentation)
-- [Development](#-development)
-- [Testing](#-testing)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
+## ✨ Key Features
 
-## ✨ Features
+- 🔐 **Secure JWT Authentication**: Complete user authentication flow with JWT tokens
+- 👥 **Advanced User Management**: Comprehensive user profiles, authentication, and authorization
+- 🔔 **Real-time Notifications**: WebSocket-based notification system using Django Channels
+- 🚀 **Multi-environment Support**: Development, staging, and production environments
+- 📊 **API Documentation**: Swagger/OpenAPI integration for interactive API documentation
+- 🐳 **Docker Integration**: Containerized setup for consistent development and deployment
+- 🧪 **Testing**: Comprehensive test suite for all components
 
-- 👤 **User Management**
+## 🛠 Tech Stack
 
-  - Secure authentication
-  - Profile management with social media integration
-  - Public/private profile separation
-  - Role-based access control
-  - Real-time profile updates
+- **Framework:** Django 4.2 + Django REST Framework 3.15
+- **Real-time:** Django Channels 4.2 with Redis
+- **Database:** PostgreSQL
+- **Caching:** Redis
+- **Task Queue:** Celery 5.4
+- **Documentation:** drf-yasg (Swagger/OpenAPI)
+- **Containerization:** Docker & Docker Compose
 
-- 🔔 **Real-time Notifications**
-
-  - WebSocket-based delivery
-  - Multiple notification types (Profile Update, Mention, System)
-  - Read status tracking
-  - Soft deletion support
-  - Generic relations to any model
-
-- 🛠 **Technical Features**
-  - REST API with Swagger/ReDoc documentation
-  - WebSocket integration with Django Channels
-  - Redis caching and channel layers
-  - PostgreSQL with optimized queries
-  - Docker multi-stage builds
-  - Environment-specific configurations
-
-## 🏗 Architecture
-
-### Core Components
-
-1. **Users Service**
-
-   - Extended Django User model
-   - Profile management with social validation
-   - Real-time updates via WebSocket
-   - Rate limiting and permissions
-   - Swagger-documented endpoints
-
-2. **Notifications Service**
-
-   - WebSocket notifications with Django Channels
-   - Generic relations for flexibility
-   - Redis channel layer for scaling
-   - Asynchronous message handling
-   - Soft deletion support
-
-3. **Infrastructure**
-   - Multi-stage Docker builds
-   - PostgreSQL with optimized indexes
-   - Redis for caching and channels
-   - Nginx reverse proxy (Production)
-   - Health checks for all services
-
-### Environment Specifications
-
-| Environment | Backend                  | Database                   | Redis                | Ports            |
-| ----------- | ------------------------ | -------------------------- | -------------------- | ---------------- |
-| Development | Django (CPU: 0.5, 512MB) | PostgreSQL 15 (0.5, 512MB) | Redis 7 (0.5, 512MB) | 8002, 5434, 6381 |
-| Staging     | Gunicorn (CPU: 1.0, 1GB) | PostgreSQL 15 (0.75, 1GB)  | Redis 7 (0.5, 512MB) | 8001, 5433, 6380 |
-| Production  | Gunicorn (CPU: 2.0, 2GB) | PostgreSQL 15 (1.0, 2GB)   | Redis 7 (1.0, 1GB)   | 8000, 5432, 6379 |
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
+- Python 3.9+
 - Docker and Docker Compose
 - Make (optional, but recommended)
-- Git
 
-### Quick Start
+### Development Setup
 
-```bash
-# Clone repository
-git clone https://github.com/yourusername/personal-backend.git
-cd personal-backend
+1. **Clone the repository**
 
-# Development setup
-cp .env.example .env.development
-make development-up-d
+   ```bash
+   git clone https://github.com/yourusername/personal_backend.git
+   cd personal_backend
+   ```
 
-# Create superuser
-make development-createsuperuser
+2. **Set up environment variables**
 
-# Access services:
-- API: http://localhost:8002
-- Admin: http://localhost:8002/admin/
-- API Docs: http://localhost:8002/swagger/
-- ReDoc: http://localhost:8002/redoc/
-- Health Check: http://localhost:8002/health/
-```
+   ```bash
+   cp .env.development .env
+   ```
 
-### Available Make Commands
+3. **Using Docker (recommended)**
 
-```bash
-# Development
-make development-build      # Build containers
-make development-up-d      # Start services
-make development-down      # Stop services
-make development-logs      # View logs
-make development-shell     # Access Django shell
-make development-migrate   # Run migrations
+   ```bash
+   make development-build    # Build the Docker containers
+   make development-up-d     # Start the services in detached mode
+   make development-migrate  # Run database migrations
+   ```
 
-# Database
-make development-db-status        # Check DB status
-make development-db-connections   # View connections
-make db-backup                   # Create backup
-make db-restore file=backup.sql  # Restore backup
+   The API will be available at `http://localhost:8000`
 
-# Monitoring
-make development-health           # Check health
-make development-check-resources  # Monitor resources
-make development-check-volumes    # Check volumes
-```
+4. **Create a superuser**
 
-## 📚 API Documentation
+   ```bash
+   make development-createsuperuser
+   ```
 
-### Interactive Documentation
+## 📚 Documentation
 
-- Swagger UI: `/swagger/` - Interactive API documentation
-- ReDoc: `/redoc/` - Alternative API documentation
-- Django Admin: `/admin/` - Database administration
-- Health Check: `/health/` - Service health status
+Comprehensive API documentation is available in the [docs](./docs) directory:
 
-### User Management
+- [API Reference](./docs/README.md)
+- [User Management](./docs/users/README.md)
+- [Notifications System](./docs/notifications/README.md)
+- [API Flow Diagrams](./docs/diagrams/README.md)
 
-```http
-# Public Endpoints
-GET /api/public/profile/{username}/   # View public profile
-POST /api/users/                      # Register new user
+Interactive API documentation is available at:
 
-# Protected Endpoints
-GET /api/users/{username}/            # Get user profile
-PATCH /api/users/{username}/          # Update profile
-DELETE /api/users/{username}/         # Delete account
-```
-
-Example Profile Response:
-
-```json
-{
-  "username": "johndoe",
-  "profile": {
-    "is_available": true,
-    "name": "John Doe",
-    "title": "Software Developer",
-    "badge": "Available",
-    "description": "Full-stack developer",
-    "github": "https://github.com/johndoe"
-  }
-}
-```
-
-### Notifications
-
-```http
-GET /api/notifications/                    # List notifications
-POST /api/notifications/{id}/mark-read/    # Mark as read
-POST /api/notifications/mark-all-read/     # Mark all as read
-DELETE /api/notifications/{id}/delete/     # Delete notification
-```
-
-### WebSocket Integration
-
-```javascript
-// Connect to notification WebSocket
-const socket = new WebSocket("ws://your-domain/ws/notifications/");
-
-// Handle messages
-socket.onmessage = (event) => {
-  const notification = JSON.parse(event.data);
-  console.log("New notification:", notification);
-};
-
-// Handle connection
-socket.onopen = () => {
-  console.log("Connected to notifications");
-};
-
-socket.onerror = (error) => {
-  console.error("WebSocket error:", error);
-};
-```
-
-## 🔧 Development
-
-### Environment Variables
-
-```env
-# Core Settings
-DEBUG=True
-SECRET_KEY=your-secret-key
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Database
-DB_NAME=personal
-DB_USER=personal
-DB_PASSWORD=devpassword
-DB_HOST=db
-DB_PORT=5432
-
-# Redis
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-# API Settings
-API_REQUIRE_AUTH=True
-```
-
-### Database Indexes
-
-The project includes optimized indexes for:
-
-- User profiles
-- Notification queries
-- Social media fields
-- Timestamp-based queries
-
-### Health Checks
-
-All services implement health checks:
-
-- Backend: HTTP endpoint check every 30s
-- Database: PostgreSQL readiness check every 10s
-- Redis: Connection check every 10s
+- Swagger UI: `http://localhost:8000/swagger/`
+- ReDoc: `http://localhost:8000/redoc/`
 
 ## 🧪 Testing
 
+Run the test suite:
+
 ```bash
-# Run all tests
-python manage.py test
-
-# Run specific app tests
-python manage.py test users
-python manage.py test notifications
-
-# Test coverage
-coverage run manage.py test
-coverage report
+make test  # Using Make
 ```
 
-## 🔒 Security Features
+For test coverage:
 
-1. **Authentication**
+```bash
+make test-coverage
+```
 
-   - Configurable API authentication
-   - Role-based access control
-   - Rate limiting (100/day anonymous, 1000/day authenticated)
-   - Secure session handling
-   - Social media URL validation
+## 📦 Deployment
 
-2. **Data Protection**
+The project supports multiple deployment environments:
 
-   - Input validation and sanitization
-   - Field-level permissions
-   - SSL/TLS support
-   - CORS protection
-   - XSS prevention
+- **Development**: `.env.development` - For local development
+- **Staging**: `.env.staging` - For testing in a production-like environment
+- **Production**: `.env.production` - For production deployment
 
-3. **Infrastructure**
-   - Non-root container users
-   - Resource limits and monitoring
-   - Automated health checks
-   - Regular backups
-   - Log rotation
+### Staging Deployment
+
+```bash
+make staging-build
+make staging-up
+make staging-migrate
+make staging-collectstatic
+```
+
+### Production Deployment
+
+```bash
+make production-build
+make production-up
+make production-migrate
+make production-collectstatic
+```
+
+## 🛠 Available Make Commands
+
+Run `make help` to see all available commands, including:
+
+- Environment management (build, up, down, logs)
+- Database operations (migrations, backup, restore)
+- Testing and code quality
+- Deployment tasks
+
+## 📋 Project Structure
+
+```
+personal_backend/
+├── docker/                # Docker configuration for all environments
+├── docs/                  # Comprehensive documentation
+├── notifications/         # Real-time notification system
+├── personal_backend/      # Core Django project settings
+├── users/                 # User management and authentication
+├── .env.development       # Development environment variables
+├── .env.staging           # Staging environment variables
+├── .env.production        # Production environment variables
+├── Makefile               # Automation commands
+├── manage.py              # Django management script
+└── requirements.txt       # Python dependencies
+```
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Write tests for new features
-4. Submit a pull request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
-## 📚 Additional Resources
-
-- [Development Guide](docker/development/README.md)
-- [Staging Guide](docker/staging/README.md)
-- [Production Guide](docker/production/README.md)
-- [Docker Guide](docker/README.md)
-- [Django Documentation](https://docs.djangoproject.com/)
-- [Django REST Framework](https://www.django-rest-framework.org/)
-- [Django Channels](https://channels.readthedocs.io/)
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Port Conflicts**
-
-```bash
-# Check ports on Linux/MacOS
-sudo lsof -i :8002
-sudo lsof -i :5434
-sudo lsof -i :6381
-```
-
-2. **Database Reset**
-
-```bash
-make development-down
-docker volume rm development_postgres_data_dev
-make development-up-d
-make development-migrate
-```
-
-3. **Permission Issues**
-
-```bash
-# Check volume permissions
-make development-check-volumes
-```
-
-### Getting Help
-
-- Check the [FAQ](docs/faq.md)
-- Review the [Troubleshooting Guide](docs/troubleshooting.md)
-- Submit an issue on GitHub
-- Contact the development team
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ## 📝 License
 
@@ -340,4 +159,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by the Personal Website Team
+For detailed information about the API endpoints and usage, please refer to the [API Documentation](./docs/README.md).

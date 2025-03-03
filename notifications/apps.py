@@ -1,9 +1,37 @@
+"""
+Django app configuration for the notifications system.
+
+This module configures the notifications app and ensures proper initialization
+of signal handlers and other app-specific setup.
+"""
+
 from django.apps import AppConfig
 
 
 class NotificationsConfig(AppConfig):
+    """
+    Configuration class for the notifications app.
+    
+    This class handles the app's configuration, including model field defaults
+    and signal registration. It ensures that all notification-related signals
+    are properly connected when the app is ready.
+    
+    Attributes:
+        default_auto_field: Default primary key field type for models
+        name: Python package name of the app
+        verbose_name: Human-readable app name
+    """
+    
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'notifications'
+    verbose_name = 'User Notifications'
 
-    def ready(self):
+    def ready(self) -> None:
+        """
+        Perform app initialization when Django starts.
+        
+        This method is called by Django when the app is ready. It imports
+        and registers all signal handlers defined in the signals module.
+        """
+        # Import signals to register handlers
         from . import signals  # noqa
