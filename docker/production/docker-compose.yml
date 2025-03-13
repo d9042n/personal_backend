@@ -18,6 +18,7 @@ services:
         condition: service_healthy
     networks:
       - backend
+      - monitoring
     deploy:
       resources:
         limits:
@@ -100,6 +101,10 @@ networks:
     driver: bridge
     internal: false
     name: production_network
+  monitoring:
+    external: true
+    name: monitoring
+    driver: bridge
 
 volumes:
   postgres_data_prod:

@@ -22,6 +22,7 @@ services:
         condition: service_healthy
     networks:
       - backend
+      - monitoring
     deploy:
       resources:
         limits:
@@ -89,6 +90,10 @@ services:
 
 networks:
   backend:
+    driver: bridge
+  monitoring:
+    external: true
+    name: monitoring
     driver: bridge
 
 volumes:
