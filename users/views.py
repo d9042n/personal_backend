@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+import logging
 
 from notifications.constants import NotificationTypes
 from notifications.services import NotificationService
@@ -22,12 +23,15 @@ from .serializers import (
     UserSessionSerializer
 )
 
+logger = logging.getLogger(__name__)
+
 # Base class for handling API authentication
 class BaseAuthenticatedView:
     throttle_classes = [UserRateThrottle]
 
     def get_permissions(self):
         if not settings.API_REQUIRE_AUTH:
+            logger.debug("API authentication requirement is disabled")
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
@@ -47,9 +51,15 @@ class PublicUserView(APIView):
         tags=['Public']
     )
     def get(self, request, username):
-        user = get_object_or_404(User, username=username, is_active=True)
-        serializer = PublicUserSerializer(user)
-        return Response(serializer.data)
+        logger.info(f"Public profile request for user: {username}")
+        try:
+            user = get_object_or_404(User, username=username, is_active=True)
+            serializer = PublicUserSerializer(user)
+            logger.debug(f"Successfully retrieved public profile for user: {username}")
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            logger.warning(f"Public profile request failed - user not found: {username}")
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
@@ -58,6 +68,7 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
 
     def get_permissions(self):
         if self.action == 'create':
+            logger.debug("Allowing unauthenticated access to user creation")
             return [permissions.AllowAny()]
         return super().get_permissions()
 
@@ -68,6 +79,7 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         # Check permissions for modification operations
         if self.action in ['update', 'partial_update', 'destroy', 'update_profile']:
             if user != self.request.user and not self.request.user.is_staff:
+                logger.warning(f"Permission denied - User {self.request.user.username} attempted to modify {username}")
                 raise PermissionDenied("You don't have permission to modify this user")
         return user
 
@@ -81,10 +93,17 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         tags=['Users']
     )
     def create(self, request):
+        logger.info("User creation request received")
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+            try:
+                user = serializer.save()
+                logger.info(f"User created successfully: {user.username}")
+                return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                logger.error(f"Error creating user: {str(e)}", exc_info=True)
+                return Response({"detail": "Error creating user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.warning(f"Invalid user creation data: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
@@ -96,9 +115,15 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         tags=['Users']
     )
     def retrieve(self, request, username):
-        user = self.get_object()
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+        logger.info(f"Profile retrieval request for user: {username}")
+        try:
+            user = self.get_object()
+            serializer = UserSerializer(user)
+            logger.debug(f"Successfully retrieved profile for user: {username}")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error retrieving user profile for {username}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error retrieving profile"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_summary="Update user",
@@ -112,12 +137,19 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         tags=['Users']
     )
     def update(self, request, username):
-        user = self.get_object()
-        serializer = UserSerializer(user, data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response(UserSerializer(user).data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.info(f"Profile update request for user: {username}")
+        try:
+            user = self.get_object()
+            serializer = UserSerializer(user, data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                logger.info(f"Successfully updated profile for user: {username}")
+                return Response(UserSerializer(user).data)
+            logger.warning(f"Invalid profile update data for {username}: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error updating profile for {username}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error updating profile"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_summary="Delete user",
@@ -129,9 +161,15 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         tags=['Users']
     )
     def destroy(self, request, username):
-        user = self.get_object()
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        logger.info(f"Account deletion request for user: {username}")
+        try:
+            user = self.get_object()
+            user.delete()
+            logger.info(f"Successfully deleted user account: {username}")
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error deleting user account {username}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error deleting account"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_summary="Get user profile",
@@ -365,6 +403,8 @@ class UserLoginView(APIView):
         username_or_email = request.data.get('username_or_email')
         password = request.data.get('password')
 
+        logger.info(f"Login attempt for user: {username_or_email}")
+
         # Try to authenticate with username
         user = authenticate(username=username_or_email, password=password)
         
@@ -377,50 +417,58 @@ class UserLoginView(APIView):
                 user = None
 
         if user is None:
+            logger.warning(f"Failed login attempt for user: {username_or_email}")
             return Response(
                 {'error': 'Invalid credentials'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
         if not user.is_active:
+            logger.warning(f"Login attempt for disabled account: {username_or_email}")
             return Response(
                 {'error': 'User account is disabled'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
-        access = str(refresh.access_token)
+        try:
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            access = str(refresh.access_token)
 
-        # Ensure session exists and get session key
-        if not request.session.session_key:
-            request.session.create()
-        session_key = request.session.session_key
+            # Ensure session exists and get session key
+            if not request.session.session_key:
+                request.session.create()
+            session_key = request.session.session_key
 
-        # Get request metadata
-        user_agent_string = request.META.get('HTTP_USER_AGENT', '')
-        ip_address = self.get_client_ip(request)
-        device_type = self.get_device_type(user_agent_string)
+            # Get request metadata
+            user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+            ip_address = self.get_client_ip(request)
+            device_type = self.get_device_type(user_agent_string)
 
-        # Update or create session
-        UserSession.objects.update_or_create(
-            user=user,
-            session_key=session_key,
-            defaults={
-                'ip_address': ip_address,
-                'user_agent': user_agent_string,
-                'device_type': device_type,
-                'expires_at': timezone.now() + timezone.timedelta(days=7),
-                'is_active': True
-            }
-        )
+            # Update or create session
+            UserSession.objects.update_or_create(
+                user=user,
+                session_key=session_key,
+                defaults={
+                    'ip_address': ip_address,
+                    'user_agent': user_agent_string,
+                    'device_type': device_type,
+                    'expires_at': timezone.now() + timezone.timedelta(days=7),
+                    'is_active': True
+                }
+            )
 
-        # Return response with tokens and user data
-        return Response({
-            'refresh': str(refresh),
-            'access': access,
-            'user': UserSerializer(user, context={'limited_fields': True}).data
-        })
+            logger.info(f"Successful login for user {user.username} from {ip_address} ({device_type})")
+
+            # Return response with tokens and user data
+            return Response({
+                'refresh': str(refresh),
+                'access': access,
+                'user': UserSerializer(user, context={'limited_fields': True}).data
+            })
+        except Exception as e:
+            logger.error(f"Error during login process for {username_or_email}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error during login"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get_client_ip(self, request):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -470,33 +518,30 @@ class UserLogoutView(APIView):
         tags=['Authentication']
     )
     def post(self, request):
+        logger.info(f"Logout request for user: {request.user.username}")
         try:
-            refresh_token = request.data.get('refresh_token')
-            if not refresh_token:
-                return Response(
-                    {'error': 'Refresh token is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Blacklist the refresh token
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-
-            # Invalidate user session
-            if request.session.session_key:
-                UserSession.objects.filter(
+            # Get current session
+            session_key = request.session.session_key
+            if session_key:
+                session = UserSession.objects.filter(
                     user=request.user,
-                    session_key=request.session.session_key,
+                    session_key=session_key,
                     is_active=True
-                ).update(is_active=False)
+                ).first()
+                
+                if session:
+                    session.terminate()
+                    logger.info(f"Successfully terminated session for user: {request.user.username}")
+                
+            # Cleanup any expired sessions
+            expired_count = UserSession.objects.cleanup_expired()
+            if expired_count:
+                logger.info(f"Cleaned up {expired_count} expired sessions during logout")
 
-            return Response({'detail': 'Successfully logged out.'})
-
+            return Response({"detail": "Successfully logged out"})
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            logger.error(f"Error during logout for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error during logout"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UserSessionView(APIView):
@@ -513,17 +558,15 @@ class UserSessionView(APIView):
     )
     def get(self, request):
         """Retrieve all active sessions for the authenticated user."""
-        user_sessions = request.user.sessions.filter(is_active=True)
-        if not user_sessions:
-            return Response({"detail": "No active sessions found."}, status=status.HTTP_204_NO_CONTENT)
-
-        # Renew sessions upon activity
-        for session in user_sessions:
-            session.last_activity = timezone.now()
-            session.save()
-
-        serializer = UserSessionSerializer(user_sessions, many=True)
-        return Response(serializer.data)
+        logger.info(f"Session list request for user: {request.user.username}")
+        try:
+            sessions = UserSession.objects.get_user_active_sessions(request.user)
+            serializer = UserSessionSerializer(sessions, many=True)
+            logger.debug(f"Retrieved {len(sessions)} active sessions for user: {request.user.username}")
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error retrieving sessions for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error retrieving sessions"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
         operation_summary="Invalidate User Session",
@@ -550,41 +593,55 @@ class UserSessionView(APIView):
     )
     def delete(self, request):
         """Invalidate user session(s)."""
+        logger.info(f"Session invalidation request for user: {request.user.username}")
+        
         session_id = request.data.get('session_id')
         all_except_current = request.data.get('all_except_current', False)
 
-        if session_id:
-            try:
-                session = UserSession.objects.get(
-                    id=session_id,
+        try:
+            if session_id:
+                try:
+                    session = UserSession.objects.get(
+                        id=session_id,
+                        user=request.user,
+                        is_active=True
+                    )
+                    session.terminate()
+                    logger.info(f"Successfully terminated session {session_id} for user: {request.user.username}")
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                except UserSession.DoesNotExist:
+                    logger.warning(f"Session {session_id} not found for user: {request.user.username}")
+                    return Response({"detail": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            if all_except_current:
+                current_session_key = request.session.session_key
+                other_sessions = UserSession.objects.filter(
                     user=request.user,
                     is_active=True
+                ).exclude(session_key=current_session_key)
+
+                terminated_count = 0
+                for session in other_sessions:
+                    session.terminate()
+                    terminated_count += 1
+
+                logger.info(f"Terminated {terminated_count} other sessions for user: {request.user.username}")
+
+                NotificationService.create_notification(
+                    recipient=request.user,
+                    notification_type=NotificationTypes.SESSIONS_TERMINATED,
+                    message=f"All other sessions have been terminated ({terminated_count} sessions)",
+                    extra_data={
+                        'terminated_count': terminated_count,
+                        'current_session_key': current_session_key
+                    }
                 )
-                session.terminate()
-                return Response({"detail": "Session invalidated."}, status=status.HTTP_204_NO_CONTENT)
-            except UserSession.DoesNotExist:
-                return Response({"detail": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        if all_except_current:
-            current_session_key = request.session.session_key
-            other_sessions = UserSession.objects.filter(
-                user=request.user,
-                is_active=True
-            ).exclude(session_key=current_session_key)
+                return Response(status=status.HTTP_204_NO_CONTENT)
 
-            for session in other_sessions:
-                session.terminate()
-
-            NotificationService.create_notification(
-                recipient=request.user,
-                notification_type=NotificationTypes.SESSIONS_TERMINATED,
-                message="All other sessions have been terminated",
-                extra_data={
-                    'terminated_count': other_sessions.count(),
-                    'current_session_key': current_session_key
-                }
-            )
-
-            return Response({"detail": "All other sessions invalidated."}, status=status.HTTP_204_NO_CONTENT)
-
-        return Response({"detail": "Invalid request parameters."}, status=status.HTTP_400_BAD_REQUEST)
+            logger.warning(f"Invalid session invalidation request parameters for user: {request.user.username}")
+            return Response({"detail": "Invalid request parameters"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(f"Error during session invalidation for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({"detail": "Error during session invalidation"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

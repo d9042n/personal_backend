@@ -32,11 +32,21 @@ def notify_profile_update(
         **kwargs: Additional signal arguments including update_fields
     """
     if created:  # Skip for new profiles
+        logger.debug(f"Skipping notification for new profile creation: {instance.users.user.username}")
         return
 
     try:
         # Get the updated fields from kwargs or use an empty set
         updated_fields: Optional[Set[str]] = kwargs.get('update_fields')
+        
+        logger.info(
+            f"Processing profile update notification for user {instance.users.user.username}"
+            f" (User ID: {instance.users.user.id})"
+        )
+        logger.debug(
+            f"Profile update details - Updated fields: {list(updated_fields) if updated_fields else 'all'}, "
+            f"Profile ID: {instance.id}"
+        )
         
         NotificationService.create_notification(
             recipient=instance.users.user,  # Access user through Users model
@@ -49,8 +59,11 @@ def notify_profile_update(
                 'username': instance.users.user.username
             }
         )
+        
+        logger.info(f"Successfully created profile update notification for user {instance.users.user.username}")
+        
     except Exception as e:
         logger.error(
-            f"Failed to create profile update notification for user {instance.users.user.id}: {e}",
+            f"Failed to create profile update notification for user {instance.users.user.id}: {str(e)}",
             exc_info=True
         )

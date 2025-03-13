@@ -6,6 +6,9 @@ of signal handlers and other app-specific setup.
 """
 
 from django.apps import AppConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationsConfig(AppConfig):
@@ -33,5 +36,10 @@ class NotificationsConfig(AppConfig):
         This method is called by Django when the app is ready. It imports
         and registers all signal handlers defined in the signals module.
         """
-        # Import signals to register handlers
-        from . import signals  # noqa
+        logger.info("Initializing Notifications app")
+        try:
+            # Import signals to register handlers
+            from . import signals  # noqa
+            logger.debug("Notifications signal handlers registered successfully")
+        except Exception as e:
+            logger.error(f"Error initializing Notifications app: {str(e)}", exc_info=True)

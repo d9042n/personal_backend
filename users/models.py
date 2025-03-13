@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
+import logging
 
 from .validators import (
     validate_github_url, validate_linkedin_url, validate_twitter_url,
@@ -14,6 +15,7 @@ from .validators import (
     validate_youtube_url, validate_devto_url
 )
 
+logger = logging.getLogger(__name__)
 
 class UserSessionManager(models.Manager):
     """Manager for handling UserSession operations."""
@@ -30,7 +32,9 @@ class UserSessionManager(models.Manager):
         """Terminate all expired sessions and return count of terminated sessions."""
         expired = self.expired()
         count = expired.count()
-        expired.update(is_active=False)
+        if count > 0:
+            logger.info(f"Cleaning up {count} expired sessions")
+            expired.update(is_active=False)
         return count
 
     def terminate_all_except(self, session_key):
@@ -43,7 +47,10 @@ class UserSessionManager(models.Manager):
         Returns:
             int: Number of sessions terminated
         """
-        return self.exclude(session_key=session_key).update(is_active=False)
+        terminated = self.exclude(session_key=session_key).update(is_active=False)
+        if terminated > 0:
+            logger.info(f"Terminated {terminated} sessions (preserving {session_key})")
+        return terminated
 
     def get_user_active_sessions(self, user):
         """
@@ -69,6 +76,15 @@ class Users(models.Model):
 
     def __str__(self):
         return self.user.username
+
+    def save(self, *args, **kwargs):
+        """Override save to add logging"""
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            logger.info(f"Created new Users instance for user: {self.user.username}")
+        else:
+            logger.debug(f"Updated Users instance for user: {self.user.username}")
 
     class Meta:
         verbose_name = 'User'
@@ -131,8 +147,14 @@ def create_users(sender, instance, created, **kwargs):
         **kwargs: Additional keyword arguments
     """
     if created:
-        users = Users.objects.create(user=instance)
-        Profile.objects.create(users=users)
+        logger.info(f"Creating Users and Profile instances for new user: {instance.username}")
+        try:
+            users = Users.objects.create(user=instance)
+            Profile.objects.create(users=users)
+            logger.info(f"Successfully created Users and Profile for {instance.username}")
+        except Exception as e:
+            logger.error(f"Error creating Users/Profile for {instance.username}: {str(e)}", exc_info=True)
+            raise
 
 
 class UserSession(models.Model):
@@ -153,6 +175,38 @@ class UserSession(models.Model):
 
     objects = UserSessionManager()
 
+    def save(self, *args, **kwargs):
+        """Override save to ensure expires_at is set and add logging."""
+        is_new = self._state.adding
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=30)
+        
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            logger.info(f"Created new session for user {self.user.username} from {self.ip_address} ({self.device_type})")
+        else:
+            logger.debug(f"Updated session {self.session_key} for user {self.user.username}")
+
+    def is_expired(self):
+        """Check if the session has expired."""
+        is_expired = timezone.now() >= self.expires_at
+        if is_expired:
+            logger.info(f"Session {self.session_key} for user {self.user.username} has expired")
+        return is_expired
+
+    def extend_session(self, hours=24):
+        """Extend the session expiration time."""
+        self.expires_at = timezone.now() + timezone.timedelta(hours=hours)
+        logger.info(f"Extended session {self.session_key} for user {self.user.username} by {hours} hours")
+        self.save()
+
+    def terminate(self):
+        """Terminate the session."""
+        self.is_active = False
+        logger.info(f"Terminated session {self.session_key} for user {self.user.username}")
+        self.save()
+
     class Meta:
         ordering = ['-last_activity']
         indexes = [
@@ -160,35 +214,3 @@ class UserSession(models.Model):
             models.Index(fields=['session_key']),
             models.Index(fields=['is_active']),
         ]
-
-    def save(self, *args, **kwargs):
-        """Override save to ensure expires_at is set."""
-        if not self.expires_at:
-            self.expires_at = timezone.now() + timezone.timedelta(minutes=30)
-        super().save(*args, **kwargs)
-
-    def is_expired(self):
-        """Check if the session has expired."""
-        return timezone.now() >= self.expires_at
-
-    def extend_session(self, hours=24):
-        """Extend the session expiration time."""
-        self.expires_at = timezone.now() + timezone.timedelta(hours=hours)
-        self.save()
-
-    def terminate(self):
-        """Terminate the session and notify the user."""
-        self.is_active = False
-        self.save()
-        NotificationService.create_notification(
-            recipient=self.user,
-            notification_type=NotificationTypes.SESSION_TERMINATED,
-            message=f"Session from {self.device_type or 'unknown device'} was terminated",
-            content_object=self,
-            extra_data={
-                'session_id': self.id,
-                'ip_address': self.ip_address,
-                'location': self.location,
-                'device_type': self.device_type
-            }
-        )

@@ -7,8 +7,11 @@ in the Django admin interface.
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+import logging
 
 from .models import Notification
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(Notification)
@@ -80,4 +83,73 @@ class NotificationAdmin(admin.ModelAdmin):
         
         Notifications should only be created through the API or signals.
         """
+        logger.debug("Attempted manual notification creation in admin interface")
         return False
+
+    def save_model(self, request, obj, form, change):
+        """
+        Log notification changes made through admin interface.
+        
+        Args:
+            request: The HTTP request
+            obj: The notification instance being saved
+            form: The form instance
+            change: Boolean indicating if this is an update
+        """
+        try:
+            action = "updated" if change else "created"
+            logger.info(
+                f"Admin {request.user.username} {action} notification {obj.id} "
+                f"for user {obj.recipient.username}"
+            )
+            super().save_model(request, obj, form, change)
+        except Exception as e:
+            logger.error(
+                f"Error saving notification {obj.id} in admin interface: {str(e)}",
+                exc_info=True
+            )
+            raise
+
+    def delete_model(self, request, obj):
+        """
+        Log notification deletion through admin interface.
+        
+        Args:
+            request: The HTTP request
+            obj: The notification instance being deleted
+        """
+        try:
+            logger.info(
+                f"Admin {request.user.username} deleted notification {obj.id} "
+                f"for user {obj.recipient.username}"
+            )
+            super().delete_model(request, obj)
+        except Exception as e:
+            logger.error(
+                f"Error deleting notification {obj.id} in admin interface: {str(e)}",
+                exc_info=True
+            )
+            raise
+
+    def delete_queryset(self, request, queryset):
+        """
+        Log bulk notification deletion through admin interface.
+        
+        Args:
+            request: The HTTP request
+            queryset: The queryset of notifications being deleted
+        """
+        try:
+            count = queryset.count()
+            notification_ids = list(queryset.values_list('id', flat=True))
+            logger.info(
+                f"Admin {request.user.username} bulk deleted {count} notifications: "
+                f"IDs {notification_ids}"
+            )
+            super().delete_queryset(request, queryset)
+        except Exception as e:
+            logger.error(
+                f"Error bulk deleting notifications in admin interface: {str(e)}",
+                exc_info=True
+            )
+            raise

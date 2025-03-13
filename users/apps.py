@@ -1,4 +1,7 @@
 from django.apps import AppConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UsersConfig(AppConfig):
@@ -6,4 +9,8 @@ class UsersConfig(AppConfig):
     name = "users"
 
     def ready(self):
-        pass
+        """Initialize app and setup logging"""
+        logger.info("Initializing Users app")
+        # Import signals to register them
+        from . import signals
+        logger.debug("Users app signals registered")

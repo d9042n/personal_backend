@@ -2,9 +2,11 @@ from typing import Dict, Any
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+import logging
 
 from .models import Notification
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
@@ -24,6 +26,24 @@ class UserMinimalSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username']
         read_only_fields = fields
+
+    def to_representation(self, instance: User) -> Dict[str, Any]:
+        """
+        Convert user instance to dictionary representation.
+        
+        Args:
+            instance: User instance to serialize
+            
+        Returns:
+            Dict containing serialized user data
+        """
+        try:
+            logger.debug(f"Serializing minimal user data for user {instance.username}")
+            data = super().to_representation(instance)
+            return data
+        except Exception as e:
+            logger.error(f"Error serializing minimal user data for user {instance.id}: {str(e)}", exc_info=True)
+            raise
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -75,7 +95,22 @@ class NotificationSerializer(serializers.ModelSerializer):
         Returns:
             Dict containing serialized notification data
         """
-        data = super().to_representation(instance)
-        # Ensure data is always a dictionary
-        data['data'] = data.get('data') or {}
-        return data
+        try:
+            logger.debug(
+                f"Serializing notification {instance.id} "
+                f"(Type: {instance.notification_type}, Recipient: {instance.recipient.username})"
+            )
+            
+            data = super().to_representation(instance)
+            # Ensure data is always a dictionary
+            data['data'] = data.get('data') or {}
+            
+            logger.debug(f"Successfully serialized notification {instance.id}")
+            return data
+            
+        except Exception as e:
+            logger.error(
+                f"Error serializing notification {instance.id} for user {instance.recipient.id}: {str(e)}",
+                exc_info=True
+            )
+            raise
