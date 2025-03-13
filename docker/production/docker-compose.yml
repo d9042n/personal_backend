@@ -50,6 +50,7 @@ services:
       - ../../.env.production
     networks:
       - backend
+      - monitoring
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -76,6 +77,7 @@ services:
       - redis_data_prod:/data
     networks:
       - backend
+      - monitoring
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -118,10 +120,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /var/www/personal/static
+      device: ${PROJECT_STATIC_ROOT:-/var/www/personal/static}
   media_files:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /var/www/personal/media
+      device: ${PROJECT_MEDIA_ROOT:-/var/www/personal/media}

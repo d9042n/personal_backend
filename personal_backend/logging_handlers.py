@@ -15,11 +15,11 @@ class DailyDirectoryLogHandler(TimedRotatingFileHandler):
         # Ensure the base directory exists
         self.base_dir.mkdir(parents=True, exist_ok=True)
         
-        # Initialize with a temporary path that will be updated in _get_current_path
-        super().__init__(filename, *args, **kwargs)
+        # Initialize with the current date's path
+        current_path = self._get_current_path()
         
-        # Update the path immediately
-        self.baseFilename = self._get_current_path()
+        # Initialize parent class with the current day's path
+        super().__init__(current_path, *args, **kwargs)
 
     def _get_current_path(self):
         """Get the current day's log directory and create it if needed"""

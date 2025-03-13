@@ -44,8 +44,9 @@ services:
       - ../../.env.development
     networks:
       - backend
+      - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U personal"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-personal}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,6 +70,7 @@ services:
       - redis_data_dev:/data
     networks:
       - backend
+      - monitoring
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

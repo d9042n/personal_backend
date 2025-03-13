@@ -137,25 +137,25 @@ production-collectstatic:
 	docker compose -f docker/production/docker-compose.yml run --rm backend python manage.py collectstatic --no-input
 
 # Monitoring - Production environment
-monitoring-prod-up:
+monitoring-production-up:
 	docker compose -f docker/monitoring/production/docker-compose.yml up -d
 	@echo "Monitoring stack started in production environment."
 	@echo "Grafana: http://localhost:3000 (admin/set via GRAFANA_ADMIN_PASSWORD)"
 	@echo "Prometheus: http://localhost:9090"
 	@echo "Loki: http://localhost:3100"
 
-monitoring-prod-down:
+monitoring-production-down:
 	docker compose -f docker/monitoring/production/docker-compose.yml down
 	@echo "Monitoring stack stopped in production environment."
 
-monitoring-prod-restart:
+monitoring-production-restart:
 	docker compose -f docker/monitoring/production/docker-compose.yml restart
 	@echo "Monitoring stack restarted in production environment."
 
-monitoring-prod-logs:
+monitoring-production-logs:
 	docker compose -f docker/monitoring/production/docker-compose.yml logs -f
 
-monitoring-prod-status:
+monitoring-production-status:
 	docker compose -f docker/monitoring/production/docker-compose.yml ps
 
 # Combined Production targets
@@ -242,11 +242,11 @@ help:
 	@echo "    monitoring-staging-status  - Check monitoring status in staging"
 	@echo ""
 	@echo "  Production:"
-	@echo "    monitoring-prod-up      - Start monitoring stack in production"
-	@echo "    monitoring-prod-down    - Stop monitoring stack in production"
-	@echo "    monitoring-prod-restart - Restart monitoring stack in production"
-	@echo "    monitoring-prod-logs    - View monitoring logs in production"
-	@echo "    monitoring-prod-status  - Check monitoring status in production"
+	@echo "    monitoring-production-up      - Start monitoring stack in production"
+	@echo "    monitoring-production-down    - Stop monitoring stack in production"
+	@echo "    monitoring-production-restart - Restart monitoring stack in production"
+	@echo "    monitoring-production-logs    - View monitoring logs in production"
+	@echo "    monitoring-production-status  - Check monitoring status in production"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test               - Run tests"
@@ -265,5 +265,5 @@ help:
 	test test-coverage db-backup db-restore clean help \
 	monitoring-dev-up monitoring-dev-down monitoring-dev-restart monitoring-dev-logs monitoring-dev-status \
 	monitoring-staging-up monitoring-staging-down monitoring-staging-restart monitoring-staging-logs monitoring-staging-status \
-	monitoring-prod-up monitoring-prod-down monitoring-prod-restart monitoring-prod-logs monitoring-prod-status \
+	monitoring-production-up monitoring-production-down monitoring-production-restart monitoring-production-logs monitoring-production-status \
 	development-all-up development-all-down staging-all-up staging-all-down production-all-up production-all-down

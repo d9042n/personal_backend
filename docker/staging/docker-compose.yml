@@ -48,8 +48,9 @@ services:
       - ../../.env.staging
     networks:
       - backend
+      - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U personal_staging"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-personal_staging}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,6 +74,7 @@ services:
       - redis_data_staging:/data
     networks:
       - backend
+      - monitoring
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -113,10 +115,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /var/www/personal/staging/static
+      device: ${PROJECT_STATIC_ROOT:-/var/www/personal/staging/static}
   media_files:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /var/www/personal/staging/media
+      device: ${PROJECT_MEDIA_ROOT:-/var/www/personal/staging/media}
