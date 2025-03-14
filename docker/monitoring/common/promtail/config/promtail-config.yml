@@ -1,0 +1,52 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*log
+
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*-json.log
+
+  # Application logs - structured in date-based directories
+  - job_name: django_application
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: django
+          app: personal_backend
+          env: ${ENVIRONMENT}
+          __path__: /app/logs/*/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) (?P<level>\w+) (?P<module>\w+) (?P<process>\d+) (?P<thread>\d+) (?P<message>.*)$'
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05,000'
+      - labels:
+          level:
+          module:
+          process:
+          thread:
+      - output:
+          source: message
+
+  # Add application-specific scrape configs as needed 

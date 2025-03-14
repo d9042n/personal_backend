@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
+    "django_prometheus",
     
     # Local apps
     'users',
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -68,6 +70,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'users.middleware.UserSessionMiddleware',
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = "personal_backend.urls"

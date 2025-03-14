@@ -1,0 +1,141 @@
+version: "3.8"
+
+services:
+  prometheus:
+    extends:
+      file: ../common/docker-compose.yml
+      service: prometheus
+    environment:
+      - ENVIRONMENT=production
+    volumes:
+      - ../common/prometheus/config:/etc/prometheus
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: always
+    networks:
+      - monitoring
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  loki:
+    extends:
+      file: ../common/docker-compose.yml
+      service: loki
+    environment:
+      - ENVIRONMENT=production
+    volumes:
+      - ../common/loki/config:/etc/loki
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    restart: always
+    networks:
+      - monitoring
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  promtail:
+    extends:
+      file: ../common/docker-compose.yml
+      service: promtail
+    environment:
+      - ENVIRONMENT=production
+    volumes:
+      - ../common/promtail/config:/etc/promtail
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    restart: always
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  node-exporter:
+    extends:
+      file: ../common/docker-compose.yml
+      service: node-exporter
+    environment:
+      - ENVIRONMENT=production
+    restart: always
+    networks:
+      - monitoring
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-exporter:
+    extends:
+      file: ../common/docker-compose.yml
+      service: postgres-exporter
+    command:
+      - "--web.listen-address=:9187"
+      - "--web.telemetry-path=/metrics"
+      - "--extend.query-path=/etc/postgres_exporter/queries.yaml"
+    environment:
+      - ENVIRONMENT=production
+      - DATA_SOURCE_NAME=postgresql://${DB_USER:-personal_production}:${DB_PASSWORD}@host.docker.internal:5432/${DB_NAME:-personal_production}?sslmode=disable
+    restart: always
+    networks:
+      - monitoring
+    external_links:
+      - db:db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    extends:
+      file: ../common/docker-compose.yml
+      service: grafana
+    environment:
+      - ENVIRONMENT=production
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-StrongPassword456!}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - ../common/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+      - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  prometheus_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  monitoring:
+    name: monitoring-production
+    driver: bridge

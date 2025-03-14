@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+  prometheus:
+    extends:
+      file: ../common/docker-compose.yml
+      service: prometheus
+    environment:
+      - ENVIRONMENT=staging
+    volumes:
+      - ../common/prometheus/config:/etc/prometheus
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  loki:
+    extends:
+      file: ../common/docker-compose.yml
+      service: loki
+    environment:
+      - ENVIRONMENT=staging
+    volumes:
+      - ../common/loki/config:/etc/loki
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring
+
+  promtail:
+    extends:
+      file: ../common/docker-compose.yml
+      service: promtail
+    environment:
+      - ENVIRONMENT=staging
+    volumes:
+      - ../common/promtail/config:/etc/promtail
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  node-exporter:
+    extends:
+      file: ../common/docker-compose.yml
+      service: node-exporter
+    environment:
+      - ENVIRONMENT=staging
+    networks:
+      - monitoring
+
+  postgres-exporter:
+    extends:
+      file: ../common/docker-compose.yml
+      service: postgres-exporter
+    command:
+      - "--web.listen-address=:9187"
+      - "--web.telemetry-path=/metrics"
+      - "--extend.query-path=/etc/postgres_exporter/queries.yaml"
+    environment:
+      - ENVIRONMENT=staging
+      - DATA_SOURCE_NAME=postgresql://${DB_USER:-personal_staging}:${DB_PASSWORD:-personal_staging}@host.docker.internal:5433/${DB_NAME:-personal_staging}?sslmode=disable
+    networks:
+      - monitoring
+    external_links:
+      - db:db
+
+  grafana:
+    extends:
+      file: ../common/docker-compose.yml
+      service: grafana
+    environment:
+      - ENVIRONMENT=staging
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-StrongPassword123!}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+    volumes:
+      - ../common/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+      - loki
+
+volumes:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    name: monitoring-staging
+    driver: bridge

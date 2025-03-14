@@ -61,4 +61,7 @@ urlpatterns = [
                   re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
                   re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
                   path('health/', health_check, name='health-check'),
+                  
+                  # Django Prometheus metrics endpoint
+                  path('', include('django_prometheus.urls')),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
