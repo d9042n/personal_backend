@@ -8,6 +8,7 @@ This directory contains the application logs for the personal backend project. T
 logs/
 ├── YYYY-MM-DD/          # Date-based directory (e.g., 2025-03-13/)
 │   ├── info.log         # Information level logs
+│   ├── warning.log      # Warning level logs
 │   ├── error.log        # Error level logs
 │   └── debug.log        # Debug level logs (only in development)
 ├── README.md            # This file
@@ -19,6 +20,7 @@ logs/
 The application uses a custom `DailyDirectoryLogHandler` which organizes logs into date-based directories. Each directory contains:
 
 - **info.log** - Contains all INFO-level logs
+- **warning.log** - Contains WARNING-level logs
 - **error.log** - Contains ERROR and CRITICAL level logs
 - **debug.log** - Contains DEBUG-level logs (only available in development/debug mode)
 
@@ -56,7 +58,7 @@ For example:
 
 ## Retention Policy
 
-Log files are kept for 30 days for info and error logs, and 7 days for debug logs, after which they are automatically rotated and old logs are removed.
+Log files are kept for 30 days for info, warning, and error logs, and 7 days for debug logs, after which they are automatically rotated and old logs are removed.
 
 ## Adding New Loggers
 
@@ -64,7 +66,7 @@ When adding new modules or apps to the project, add appropriate loggers in `sett
 
 ```python
 'new_app_name': {
-    'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+    'handlers': ['console', 'file_info', 'file_warning', 'file_error', 'file_debug'],
     'level': 'DEBUG' if DEBUG else 'INFO',
     'propagate': True,
 },

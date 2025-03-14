@@ -337,6 +337,15 @@ LOGGING = {
             'backupCount': 30,
             'formatter': 'verbose',
         },
+        'file_warning': {
+            'level': 'WARNING',
+            'class': 'personal_backend.logging_handlers.DailyDirectoryLogHandler',
+            'filename': LOGS_DIR / 'warning.log',
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 30,
+            'formatter': 'verbose',
+        },
         'file_debug': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -355,17 +364,17 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file_info', 'file_error'],
+            'handlers': ['console', 'file_info', 'file_error', 'file_warning'],
             'level': 'INFO',
             'propagate': True,
         },
         'django.server': {
-            'handlers': ['console', 'file_info'],
+            'handlers': ['console', 'file_info', 'file_warning'],
             'level': 'INFO',
             'propagate': False,
         },
         'django.request': {
-            'handlers': ['mail_admins', 'file_error'],
+            'handlers': ['mail_admins', 'file_error', 'file_warning'],
             'level': 'ERROR',
             'propagate': False,
         },
@@ -375,12 +384,12 @@ LOGGING = {
             'propagate': False,
         },
         'users': {
-            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+            'handlers': ['console', 'file_info', 'file_error', 'file_warning', 'file_debug'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
         'notifications': {
-            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+            'handlers': ['console', 'file_info', 'file_error', 'file_warning', 'file_debug'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
