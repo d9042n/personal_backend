@@ -19,22 +19,33 @@ class NotificationTypes:
         SESSIONS_TERMINATED: Used when multiple sessions are terminated
     """
     
-    # Notification type constants
-    PROFILE_UPDATE: str = 'profile_update'
-    MENTION: str = 'mention'
-    SYSTEM: str = 'system'
-    SESSION_TERMINATED: str = 'session_terminated'
-    SESSIONS_TERMINATED: str = 'sessions_terminated'
-
+    class Types:
+        """Available notification types in the system."""
+        PROFILE_UPDATE = 'profile_update'
+        MENTION = 'mention'
+        SYSTEM = 'system'
+        SESSION_TERMINATED = 'session_terminated'
+        SESSIONS_TERMINATED = 'sessions_terminated'
+        
+        # Choices for model field
+        CHOICES: List[Tuple[str, str]] = [
+            (PROFILE_UPDATE, _('Profile Update')),
+            (MENTION, _('Mention')),
+            (SYSTEM, _('System Notification')),
+            (SESSION_TERMINATED, _('Session Terminated')),
+            (SESSIONS_TERMINATED, _('Multiple Sessions Terminated')),
+        ]
+    
+    # For direct access
+    PROFILE_UPDATE = Types.PROFILE_UPDATE
+    MENTION = Types.MENTION
+    SYSTEM = Types.SYSTEM
+    SESSION_TERMINATED = Types.SESSION_TERMINATED
+    SESSIONS_TERMINATED = Types.SESSIONS_TERMINATED
+    
     # Choices for model field
-    CHOICES: List[Tuple[str, str]] = [
-        (PROFILE_UPDATE, _('Profile Update')),
-        (MENTION, _('Mention')),
-        (SYSTEM, _('System Notification')),
-        (SESSION_TERMINATED, _('Session Terminated')),
-        (SESSIONS_TERMINATED, _('Multiple Sessions Terminated')),
-    ]
-
+    CHOICES = Types.CHOICES
+    
     # Cache for valid types
     _VALID_TYPES: Dict[str, str] = dict(CHOICES)
 

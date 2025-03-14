@@ -174,13 +174,28 @@ Delete a specific notification.
 
 The system supports various notification types, each with specific data structures:
 
-### 1. USER_MENTION
+### 1. PROFILE_UPDATE
+
+Triggered when a user's profile is updated.
+
+```json
+{
+  "type": "profile_update",
+  "data": {
+    "updated_fields": ["name", "title", "description"],
+    "profile_id": "string",
+    "username": "string"
+  }
+}
+```
+
+### 2. MENTION
 
 Triggered when a user is mentioned in content.
 
 ```json
 {
-  "type": "USER_MENTION",
+  "type": "mention",
   "data": {
     "mentioned_by": "username",
     "content_id": "string",
@@ -189,13 +204,13 @@ Triggered when a user is mentioned in content.
 }
 ```
 
-### 2. SYSTEM_UPDATE
+### 3. SYSTEM
 
 System-level notifications for important updates.
 
 ```json
 {
-  "type": "SYSTEM_UPDATE",
+  "type": "system",
   "data": {
     "update_type": "string",
     "importance": "high|medium|low"
@@ -203,17 +218,31 @@ System-level notifications for important updates.
 }
 ```
 
-### 3. DIRECT_MESSAGE
+### 4. SESSION_TERMINATED
 
-Notifications for direct messages.
+Triggered when a user's session is terminated.
 
 ```json
 {
-  "type": "DIRECT_MESSAGE",
+  "type": "session_terminated",
   "data": {
-    "sender": "username",
-    "message_preview": "string",
-    "conversation_id": "string"
+    "session_id": "string",
+    "device_info": "string",
+    "terminated_at": "datetime"
+  }
+}
+```
+
+### 5. SESSIONS_TERMINATED
+
+Triggered when multiple sessions for a user are terminated.
+
+```json
+{
+  "type": "sessions_terminated",
+  "data": {
+    "session_count": "number",
+    "terminated_at": "datetime"
   }
 }
 ```

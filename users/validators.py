@@ -25,67 +25,67 @@ def validate_url_pattern(value, pattern, platform_name):
 # Platform-specific validators using partial application
 validate_github_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.GITHUB_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.GITHUB.pattern,
     platform_name='GitHub'
 )
 
 validate_linkedin_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.LINKEDIN_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.LINKEDIN.pattern,
     platform_name='LinkedIn'
 )
 
 validate_twitter_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.TWITTER_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.TWITTER.pattern,
     platform_name='Twitter'
 )
 
 validate_facebook_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.FACEBOOK_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.FACEBOOK.pattern,
     platform_name='Facebook'
 )
 
 validate_leetcode_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.LEETCODE_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.LEETCODE.pattern,
     platform_name='LeetCode'
 )
 
 validate_hackerrank_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.HACKERRANK_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.HACKERRANK.pattern,
     platform_name='HackerRank'
 )
 
 validate_medium_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.MEDIUM_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.MEDIUM.pattern,
     platform_name='Medium'
 )
 
 validate_stackoverflow_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.STACKOVERFLOW_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.STACKOVERFLOW.pattern,
     platform_name='Stack Overflow'
 )
 
 validate_portfolio_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.PORTFOLIO_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.PORTFOLIO.pattern,
     platform_name='Portfolio'
 )
 
 validate_youtube_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.YOUTUBE_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.YOUTUBE.pattern,
     platform_name='YouTube'
 )
 
 validate_devto_url = partial(
     validate_url_pattern,
-    pattern=UserConstants.DEVTO_URL_PATTERN,
+    pattern=UserConstants.URLPatterns.DEVTO.pattern,
     platform_name='Dev.to'
 )
 

@@ -29,6 +29,7 @@ A robust and scalable backend service built with Django REST Framework, providin
 - **Task Queue:** Celery 5.4
 - **Documentation:** drf-yasg (Swagger/OpenAPI)
 - **Containerization:** Docker & Docker Compose
+- **Monitoring:** Prometheus metrics integration
 
 ## 🚀 Quick Start
 
@@ -82,6 +83,46 @@ Interactive API documentation is available at:
 
 - Swagger UI: `http://localhost:8000/swagger/`
 - ReDoc: `http://localhost:8000/redoc/`
+
+## 📖 Code Organization
+
+The codebase follows a clean and modular architecture:
+
+### Users App
+
+The `users` app handles user management with:
+
+- **Users Model**: Extension of Django's User model with additional metadata
+- **Profile Model**: User profiles with customizable fields and social media links
+- **UserSession Model**: Session tracking and management across devices
+- **Clean Constants Structure**: Well-organized constants using nested classes
+- **URL Validators**: Comprehensive validation for social media profile URLs
+
+### Notifications App
+
+The `notifications` app provides a real-time notification system:
+
+- **Notification Model**: Flexible notification storage with generic relations
+- **WebSocket Consumer**: Real-time notification delivery via Django Channels
+- **Notification Service**: Clean service layer for notification creation and management
+
+### Core Architecture
+
+- **Service Layer Pattern**: Business logic encapsulated in service classes
+- **Clean Import Organization**: Organized imports to prevent circular dependencies
+- **Detailed Logging**: Comprehensive logging for debugging and monitoring
+- **Type Hints**: Python type annotations for better code understanding
+
+## 🚀 Recent Improvements
+
+The codebase has been recently refactored for better maintainability and organization:
+
+- **Nested Constants Classes**: Improved organization of constants using nested classes for better code organization and readability
+- **Enhanced Documentation**: Updated API documentation to accurately reflect the current state of the codebase
+- **Streamlined Logging**: Removed unnecessary warning logs and improved log messages for better debugging
+- **Consistent Code Style**: Applied consistent coding style across the entire codebase
+- **Type Annotations**: Added Python type hints to improve code readability and IDE support
+- **Optimized Imports**: Cleaned up and organized imports to prevent circular dependencies
 
 ## 🧪 Testing
 
@@ -139,8 +180,16 @@ personal_backend/
 ├── docker/                # Docker configuration for all environments
 ├── docs/                  # Comprehensive documentation
 ├── notifications/         # Real-time notification system
+│   ├── models.py          # Notification data models
+│   ├── consumers.py       # WebSocket consumers for real-time updates
+│   ├── services.py        # Notification service layer
+│   └── ...
 ├── personal_backend/      # Core Django project settings
 ├── users/                 # User management and authentication
+│   ├── models.py          # User data models and session tracking
+│   ├── constants.py       # Well-organized constants with nested classes
+│   ├── validators.py      # URL and input validation
+│   └── ...
 ├── .env.development       # Development environment variables
 ├── .env.staging           # Staging environment variables
 ├── .env.production        # Production environment variables

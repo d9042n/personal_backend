@@ -8,6 +8,7 @@ from notifications.services import NotificationService
 from notifications.constants import NotificationTypes
 import logging
 
+from .constants import UserConstants
 from .validators import (
     validate_github_url, validate_linkedin_url, validate_twitter_url,
     validate_facebook_url, validate_leetcode_url, validate_hackerrank_url,
@@ -101,14 +102,25 @@ class Profile(models.Model):
     Each profile is associated with exactly one Users instance.
     """
     users = models.OneToOneField(Users, on_delete=models.CASCADE, related_name='profile')
+    
+    # Availability status
     is_available = models.BooleanField(
         default=True,
         verbose_name=_('Availability Status'),
         help_text=_('Controls whether the badge is displayed')
     )
-    badge = models.CharField(max_length=100, default="", blank=True)
+    
+    # Profile badge shown on user's profile
+    badge = models.CharField(
+        max_length=100, 
+        choices=UserConstants.Badges.CHOICES,
+        default=UserConstants.Badges.AVAILABLE, 
+        blank=True
+    )
+    
+    # Basic profile information
     name = models.CharField(max_length=100, default="", blank=True)
-    title = models.CharField(max_length=100, default="", blank=True)
+    title = models.CharField(max_length=100, default=UserConstants.DEFAULT_TITLE, blank=True)
     description = models.TextField(default="", blank=True)
     
     # Social Links with validation

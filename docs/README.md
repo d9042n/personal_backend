@@ -17,7 +17,8 @@ Welcome to the comprehensive documentation for the Personal Backend API. This gu
    - [🔔 Notifications](./notifications/README.md)
 4. [Common Patterns](#common-patterns)
 5. [📊 API Flow Diagrams](./diagrams/README.md)
-6. [API Tools](#api-tools)
+6. [Code Organization](#code-organization)
+7. [API Tools](#api-tools)
 
 ## 🎯 Overview
 
@@ -28,6 +29,7 @@ The Personal Backend API is a robust platform built using Django REST Framework,
 - 🔒 **Secure Authentication**: JWT-based authentication for secure API access
 - 📱 **Multi-device Support**: Session management across different devices
 - 🚀 **Scalable Architecture**: Designed for high performance and reliability
+- 📊 **Monitoring**: Prometheus metrics integration for system monitoring
 
 ## 🔐 Authentication
 
@@ -148,6 +150,59 @@ List endpoints implement cursor-based pagination:
 | ----------- | ------------------------ | ------- |
 | `cursor`    | Pagination cursor token  | null    |
 | `page_size` | Number of items per page | 20      |
+
+## 📐 Code Organization
+
+The codebase follows a clean and modular architecture with the following patterns:
+
+### Service Layer Pattern
+
+Business logic is encapsulated in service classes that handle complex operations:
+
+- `NotificationService`: Manages notification creation and delivery
+- `UserService`: Handles user-specific operations
+
+### Constants Organization
+
+Constants are organized in nested classes for better code organization:
+
+```python
+class UserConstants:
+    class Badges:
+        AVAILABLE = 'available'
+        BUSY = 'busy'
+        OFFLINE = 'offline'
+
+        CHOICES = [
+            (AVAILABLE, _('Available for hire')),
+            (BUSY, _('Currently busy')),
+            (OFFLINE, _('Not available')),
+        ]
+
+    class URLPatterns:
+        # URL validation patterns
+```
+
+### Clean Import Strategy
+
+Imports are organized to prevent circular dependencies:
+
+```python
+# Standard library imports
+import logging
+from typing import Optional, Dict
+
+# Django imports
+from django.db import models
+from django.utils import timezone
+
+# Third-party imports
+from rest_framework import serializers
+
+# Local imports
+from .constants import NotificationTypes
+from .models import Notification
+```
 
 ## 🛠 API Tools
 

@@ -36,15 +36,11 @@ class NotificationsConfig(AppConfig):
         This method is called by Django when the app is ready. It imports
         and registers all signal handlers defined in the signals module.
         """
-        # Example of using info level logging
         logger.info("Initializing Notifications app")
-
-        # Example of using warning level logging
-        logger.warning("Notifications app initialized with default settings - consider reviewing security configurations")
 
         try:
             # Import signals to register handlers
-            from . import signals  # noqa
+            from . import signals
             logger.debug("Notifications signal handlers registered successfully")
         except Exception as e:
-            logger.error(f"Error initializing Notifications app: {str(e)}", exc_info=True)
+            logger.error(f"Error registering notification signals: {str(e)}", exc_info=True)

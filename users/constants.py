@@ -93,21 +93,3 @@ class UserConstants:
             f'^{PROTOCOL}dev\.to/{USERNAME}{OPTIONAL_SLASH}',
             re.IGNORECASE
         )
-
-    # For backward compatibility
-    BADGE_AVAILABLE = Badges.AVAILABLE
-    BADGE_BUSY = Badges.BUSY
-    BADGE_OFFLINE = Badges.OFFLINE
-    BADGE_CHOICES = Badges.CHOICES
-
-    GITHUB_URL_PATTERN = URLPatterns.GITHUB.pattern
-    LINKEDIN_URL_PATTERN = URLPatterns.LINKEDIN.pattern
-    TWITTER_URL_PATTERN = URLPatterns.TWITTER.pattern
-    FACEBOOK_URL_PATTERN = URLPatterns.FACEBOOK.pattern
-    LEETCODE_URL_PATTERN = URLPatterns.LEETCODE.pattern
-    HACKERRANK_URL_PATTERN = URLPatterns.HACKERRANK.pattern
-    MEDIUM_URL_PATTERN = URLPatterns.MEDIUM.pattern
-    STACKOVERFLOW_URL_PATTERN = URLPatterns.STACKOVERFLOW.pattern
-    PORTFOLIO_URL_PATTERN = URLPatterns.PORTFOLIO.pattern
-    YOUTUBE_URL_PATTERN = URLPatterns.YOUTUBE.pattern
-    DEVTO_URL_PATTERN = URLPatterns.DEVTO.pattern
