@@ -34,9 +34,9 @@ services:
       test:
         [
           "CMD",
-          "curl",
-          "-f",
-          "${HEALTH_CHECK_URL:-http://localhost:8000/health/}",
+          "sh",
+          "-c",
+          "curl -f ${HEALTH_CHECK_URL:-http://localhost:8000/health/} || exit 1",
         ]
       interval: 30s
       timeout: 10s
@@ -44,6 +44,7 @@ services:
       start_period: 40s
     environment:
       - DJANGO_SETTINGS_MODULE=personal_backend.settings
+      - HEALTH_CHECK_URL=${HEALTH_CHECK_URL}
     volumes:
       - static_files:/app/staticfiles:rw
       - media_files:/app/media:rw
