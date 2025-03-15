@@ -63,11 +63,12 @@ services:
       - "--extend.query-path=/etc/postgres_exporter/queries.yaml"
     environment:
       - ENVIRONMENT=development
-      - DATA_SOURCE_NAME=postgresql://${DB_USER:-personal}:${DB_PASSWORD:-personal}@host.docker.internal:5434/${DB_NAME:-personal}?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
     networks:
       - monitoring
-    external_links:
-      - db:db
+      - backend
+    depends_on:
+      - db
 
   grafana:
     extends:
@@ -75,10 +76,10 @@ services:
       service: grafana
     environment:
       - ENVIRONMENT=development
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL}
     volumes:
       - ../common/grafana/provisioning:/etc/grafana/provisioning
       - grafana_data:/var/lib/grafana
@@ -99,3 +100,5 @@ networks:
   monitoring:
     name: monitoring
     driver: bridge
+  backend:
+    external: true

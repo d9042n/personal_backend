@@ -36,7 +36,7 @@ services:
       - ./promtail/config:/etc/promtail
       - /var/log:/var/log
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ${APP_LOGS_PATH:-../../../logs}:/app/logs:ro
+      - ${APP_LOGS_PATH}:/app/logs:ro
     command: -config.file=/etc/promtail/promtail-config.yml
     restart: unless-stopped
     networks:

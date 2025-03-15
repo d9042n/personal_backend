@@ -31,7 +31,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      test: ["CMD", "curl", "-f", "http://backend:8000/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,7 +52,7 @@ services:
       - backend
       - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -120,10 +120,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${PROJECT_STATIC_ROOT:-/var/www/personal/static}
+      device: ${PROJECT_STATIC_ROOT}
   media_files:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${PROJECT_MEDIA_ROOT:-/var/www/personal/media}
+      device: ${PROJECT_MEDIA_ROOT}
