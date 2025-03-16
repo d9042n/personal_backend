@@ -46,10 +46,11 @@ services:
       - backend
       - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -76,6 +77,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
     deploy:
       resources:
         limits:
@@ -93,15 +95,18 @@ services:
 networks:
   backend:
     driver: bridge
+    name: development_network
   monitoring:
     external: true
-    name: monitoring
+    name: monitoring-development
     driver: bridge
 
 volumes:
   postgres_data_dev:
     driver: local
+    name: personal_postgres_dev
   redis_data_dev:
     driver: local
+    name: personal_redis_dev
   python-packages:
     driver: local

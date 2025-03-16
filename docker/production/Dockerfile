@@ -29,10 +29,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    SECRET_KEY=build_time_key_not_for_production \
-    DEBUG=False \
-    ALLOWED_HOSTS=localhost
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Create non-root user
 RUN groupadd -r django && useradd -r -g django django
@@ -62,8 +59,15 @@ COPY --chown=django:django . .
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
 
-# Collect static files with a temporary SECRET_KEY
+# Collect static files (we'll use env vars from the environment during startup)
+ENV SECRET_KEY=placeholder_build_only_key
+ENV DEBUG=False 
+ENV ALLOWED_HOSTS=localhost,127.0.0.1
 RUN python manage.py collectstatic --noinput
+# Unset the placeholder env vars
+ENV SECRET_KEY= \
+    DEBUG= \
+    ALLOWED_HOSTS=
 
 # Change ownership to non-root user
 RUN chown -R django:django /app

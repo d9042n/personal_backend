@@ -27,7 +27,9 @@ FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Create non-root user
 RUN groupadd -r django && useradd -r -g django django
@@ -51,8 +53,17 @@ RUN pip install --no-cache /wheels/* \
     && rm -rf /wheels \
     && rm -rf /root/.cache/pip/*
 
+# Create directories for static and media files
+RUN mkdir -p /app/staticfiles /app/media
+
+# Change ownership to non-root user
+RUN chown -R django:django /app
+
 # Switch to non-root user
 USER django
+
+# Expose port
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \

@@ -56,8 +56,15 @@ RUN pip install --no-cache /wheels/* \
 # Copy project files
 COPY --chown=django:django . .
 
-# Collect static files
+# Collect static files (we'll use env vars from the environment during startup)
+ENV SECRET_KEY=placeholder_build_only_key
+ENV DEBUG=False 
+ENV ALLOWED_HOSTS=localhost,127.0.0.1
 RUN python manage.py collectstatic --noinput
+# Unset the placeholder env vars
+ENV SECRET_KEY= \
+    DEBUG= \
+    ALLOWED_HOSTS=
 
 # Change ownership to non-root user
 RUN chown -R django:django /app
