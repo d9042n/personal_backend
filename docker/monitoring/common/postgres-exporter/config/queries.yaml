@@ -1,0 +1,249 @@
+pg_replication:
+  query: "SELECT CASE WHEN NOT pg_is_in_recovery() THEN 0 ELSE GREATEST(0, EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))) END AS lag"
+  metrics:
+    - lag:
+        usage: "GAUGE"
+        description: "Replication lag behind master in seconds"
+
+pg_stat_activity:
+  query: "SELECT state, count(*) FROM pg_stat_activity GROUP BY state"
+  metrics:
+    - state:
+        usage: "LABEL"
+        description: "Connection state"
+    - count:
+        usage: "GAUGE"
+        description: "Number of connections in this state"
+
+pg_database:
+  query: |
+    SELECT
+      pg_database.datname,
+      pg_database_size(pg_database.datname) as size_bytes,
+      pg_stat_database.xact_commit,
+      pg_stat_database.xact_rollback,
+      pg_stat_database.blks_read,
+      pg_stat_database.blks_hit,
+      pg_stat_database.tup_returned,
+      pg_stat_database.tup_fetched,
+      pg_stat_database.tup_inserted,
+      pg_stat_database.tup_updated,
+      pg_stat_database.tup_deleted,
+      pg_stat_database.conflicts,
+      pg_stat_database.temp_files,
+      pg_stat_database.temp_bytes,
+      pg_stat_database.deadlocks,
+      COALESCE(extract(epoch from pg_stat_database.stats_reset)::bigint, 0) as stats_reset
+    FROM
+      pg_database
+    JOIN
+      pg_stat_database ON pg_database.datname = pg_stat_database.datname
+    WHERE pg_database.datname NOT IN ('template0', 'template1', 'postgres')
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Name of the database"
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Disk space used by the database"
+    - xact_commit:
+        usage: "COUNTER"
+        description: "Number of transactions committed"
+    - xact_rollback:
+        usage: "COUNTER"
+        description: "Number of transactions rolled back"
+    - blks_read:
+        usage: "COUNTER"
+        description: "Number of disk blocks read"
+    - blks_hit:
+        usage: "COUNTER"
+        description: "Number of disk blocks found in buffer cache"
+    - tup_returned:
+        usage: "COUNTER"
+        description: "Number of rows returned"
+    - tup_fetched:
+        usage: "COUNTER"
+        description: "Number of rows fetched"
+    - tup_inserted:
+        usage: "COUNTER"
+        description: "Number of rows inserted"
+    - tup_updated:
+        usage: "COUNTER"
+        description: "Number of rows updated"
+    - tup_deleted:
+        usage: "COUNTER"
+        description: "Number of rows deleted"
+    - conflicts:
+        usage: "COUNTER"
+        description: "Number of queries canceled due to conflicts with recovery"
+    - temp_files:
+        usage: "COUNTER"
+        description: "Number of temporary files created"
+    - temp_bytes:
+        usage: "COUNTER"
+        description: "Size of temporary files created"
+    - deadlocks:
+        usage: "COUNTER"
+        description: "Number of deadlocks detected"
+    - stats_reset:
+        usage: "GAUGE"
+        description: "Time at which database statistics were last reset"
+
+pg_locks:
+  query: |
+    SELECT
+      pg_database.datname,
+      mode,
+      count(mode) AS count
+    FROM pg_locks
+    JOIN pg_database ON pg_database.oid = pg_locks.database
+    GROUP BY datname, mode
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Name of the database"
+    - mode:
+        usage: "LABEL"
+        description: "Lock mode"
+    - count:
+        usage: "GAUGE"
+        description: "Number of locks"
+
+pg_stat_user_tables:
+  query: |
+    SELECT
+      schemaname,
+      relname,
+      seq_scan,
+      seq_tup_read,
+      idx_scan,
+      idx_tup_fetch,
+      n_tup_ins,
+      n_tup_upd,
+      n_tup_del,
+      n_tup_hot_upd,
+      n_live_tup,
+      n_dead_tup,
+      vacuum_count,
+      autovacuum_count,
+      analyze_count,
+      autoanalyze_count
+    FROM
+      pg_stat_user_tables
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - relname:
+        usage: "LABEL"
+        description: "Table name"
+    - seq_scan:
+        usage: "COUNTER"
+        description: "Number of sequential scans"
+    - seq_tup_read:
+        usage: "COUNTER"
+        description: "Number of tuples read in sequential scans"
+    - idx_scan:
+        usage: "COUNTER"
+        description: "Number of index scans"
+    - idx_tup_fetch:
+        usage: "COUNTER"
+        description: "Number of tuples fetched by index scans"
+    - n_tup_ins:
+        usage: "COUNTER"
+        description: "Number of tuples inserted"
+    - n_tup_upd:
+        usage: "COUNTER"
+        description: "Number of tuples updated"
+    - n_tup_del:
+        usage: "COUNTER"
+        description: "Number of tuples deleted"
+    - n_tup_hot_upd:
+        usage: "COUNTER"
+        description: "Number of tuples hot updated"
+    - n_live_tup:
+        usage: "GAUGE"
+        description: "Estimated number of live tuples"
+    - n_dead_tup:
+        usage: "GAUGE"
+        description: "Estimated number of dead tuples"
+    - vacuum_count:
+        usage: "COUNTER"
+        description: "Number of manual vacuums"
+    - autovacuum_count:
+        usage: "COUNTER"
+        description: "Number of auto vacuums"
+    - analyze_count:
+        usage: "COUNTER"
+        description: "Number of manual analyzes"
+    - autoanalyze_count:
+        usage: "COUNTER"
+        description: "Number of auto analyzes"
+
+pg_statio_user_tables:
+  query: |
+    SELECT
+      schemaname,
+      relname,
+      heap_blks_read,
+      heap_blks_hit,
+      idx_blks_read,
+      idx_blks_hit,
+      toast_blks_read,
+      toast_blks_hit,
+      tidx_blks_read,
+      tidx_blks_hit
+    FROM
+      pg_statio_user_tables
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - relname:
+        usage: "LABEL"
+        description: "Table name"
+    - heap_blks_read:
+        usage: "COUNTER"
+        description: "Number of heap blocks read"
+    - heap_blks_hit:
+        usage: "COUNTER"
+        description: "Number of heap blocks hit in cache"
+    - idx_blks_read:
+        usage: "COUNTER"
+        description: "Number of index blocks read"
+    - idx_blks_hit:
+        usage: "COUNTER"
+        description: "Number of index blocks hit in cache"
+    - toast_blks_read:
+        usage: "COUNTER"
+        description: "Number of TOAST blocks read"
+    - toast_blks_hit:
+        usage: "COUNTER"
+        description: "Number of TOAST blocks hit in cache" 
+    - tidx_blks_read:
+        usage: "COUNTER"
+        description: "Number of TOAST index blocks read"
+    - tidx_blks_hit:
+        usage: "COUNTER"
+        description: "Number of TOAST index blocks hit in cache"
+
+pg_connection_stats:
+  query: |
+    SELECT
+      datname,
+      state,
+      count(*) as connection_count
+    FROM
+      pg_stat_activity
+    GROUP BY
+      datname, state
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Database name"
+    - state:
+        usage: "LABEL"
+        description: "Connection state"
+    - connection_count:
+        usage: "GAUGE"
+        description: "Number of connections in this state" 
