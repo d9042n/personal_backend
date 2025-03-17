@@ -109,7 +109,11 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin' if not DEBUG else 'same-origin'
 
 # Monitoring endpoints exempt from SSL redirect
-SECURE_SSL_REDIRECT_EXEMPT = os.getenv('SECURE_SSL_REDIRECT_EXEMPT', 'health/,metrics,prometheus/,swagger/,redoc/').split(',')
+SECURE_REDIRECT_EXEMPT = [
+    r'^health/',
+    r'^metrics',
+    r'^django_prometheus/'
+]
 
 # =========================================
 # 4. AUTHENTICATION & AUTHORIZATION

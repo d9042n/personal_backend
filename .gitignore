@@ -177,3 +177,6 @@ cython_debug/
 .env.development
 .env.staging
 .env.production
+
+static/
+media/
