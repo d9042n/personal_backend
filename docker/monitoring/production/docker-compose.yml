@@ -88,13 +88,11 @@ services:
     env_file:
       - ../../../.env.production
     environment:
-      - DATA_SOURCE_NAME=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+      - DATA_SOURCE_NAME
     restart: always
     networks:
       - monitoring
       - backend
-    depends_on:
-      - db
     logging:
       driver: "json-file"
       options:
@@ -143,8 +141,8 @@ volumes:
 
 networks:
   monitoring:
+    external: true
     name: monitoring-production
-    driver: bridge
   backend:
     external: true
     name: production_network

@@ -95,11 +95,11 @@ services:
 networks:
   backend:
     driver: bridge
+    internal: false
     name: development_network
   monitoring:
-    external: true
-    name: monitoring-development
     driver: bridge
+    name: monitoring-development
 
 volumes:
   postgres_data_dev:

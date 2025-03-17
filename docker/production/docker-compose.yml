@@ -104,9 +104,8 @@ networks:
     internal: false
     name: production_network
   monitoring:
-    external: true
-    name: monitoring-production
     driver: bridge
+    name: monitoring-production
 
 volumes:
   postgres_data_prod:

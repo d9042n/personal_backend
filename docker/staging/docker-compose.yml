@@ -100,10 +100,11 @@ networks:
   backend:
     driver: bridge
     internal: false
+    name: staging_network
   monitoring:
-    external: true
-    name: monitoring-staging
     driver: bridge
+    name: monitoring-staging
+
 
 volumes:
   postgres_data_staging:

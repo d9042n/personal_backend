@@ -64,12 +64,10 @@ services:
     env_file:
       - ../../../.env.staging
     environment:
-      - DATA_SOURCE_NAME=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+      - DATA_SOURCE_NAME
     networks:
       - monitoring
       - backend
-    depends_on:
-      - db
 
   grafana:
     extends:
@@ -106,7 +104,8 @@ volumes:
 
 networks:
   monitoring:
+    external: true
     name: monitoring-staging
-    driver: bridge
   backend:
     external: true
+    name: staging_network
