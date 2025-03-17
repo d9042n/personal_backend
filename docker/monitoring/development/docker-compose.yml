@@ -105,7 +105,7 @@ volumes:
 networks:
   monitoring:
     external: true
-    name: monitoring-development
+    name: monitoring
   backend:
     external: true
     name: development_network

@@ -103,8 +103,7 @@ networks:
     name: staging_network
   monitoring:
     driver: bridge
-    name: monitoring-staging
-
+    name: monitoring
 
 volumes:
   postgres_data_staging:

@@ -105,7 +105,7 @@ networks:
     name: production_network
   monitoring:
     driver: bridge
-    name: monitoring-production
+    name: monitoring
 
 volumes:
   postgres_data_prod:

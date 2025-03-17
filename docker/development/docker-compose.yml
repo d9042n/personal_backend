@@ -99,7 +99,7 @@ networks:
     name: development_network
   monitoring:
     driver: bridge
-    name: monitoring-development
+    name: monitoring
 
 volumes:
   postgres_data_dev:
