@@ -108,4 +108,4 @@ networks:
     name: monitoring
   backend:
     external: true
-    name: development_network
+    name: backend

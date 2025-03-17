@@ -100,7 +100,7 @@ networks:
   backend:
     driver: bridge
     internal: false
-    name: staging_network
+    name: backend
   monitoring:
     driver: bridge
     name: monitoring

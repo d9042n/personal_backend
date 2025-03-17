@@ -145,4 +145,4 @@ networks:
     name: monitoring
   backend:
     external: true
-    name: production_network
+    name: backend

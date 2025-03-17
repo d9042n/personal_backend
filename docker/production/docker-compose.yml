@@ -102,7 +102,7 @@ networks:
   backend:
     driver: bridge
     internal: false
-    name: production_network
+    name: backend
   monitoring:
     driver: bridge
     name: monitoring
