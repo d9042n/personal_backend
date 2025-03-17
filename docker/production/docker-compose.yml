@@ -48,6 +48,10 @@ services:
       - postgres_data_prod:/var/lib/postgresql/data
     env_file:
       - ../../.env.production
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     networks:
       - backend
       - monitoring

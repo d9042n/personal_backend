@@ -64,7 +64,7 @@ services:
     env_file:
       - ../../../.env.development
     environment:
-      - DATA_SOURCE_NAME
+      - DATA_SOURCE_NAME=${DATA_SOURCE_NAME}
     networks:
       - monitoring
       - backend

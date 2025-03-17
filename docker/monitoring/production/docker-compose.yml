@@ -88,7 +88,7 @@ services:
     env_file:
       - ../../../.env.production
     environment:
-      - DATA_SOURCE_NAME
+      - DATA_SOURCE_NAME=${DATA_SOURCE_NAME}
     restart: always
     networks:
       - monitoring

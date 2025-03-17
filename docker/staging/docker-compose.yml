@@ -46,6 +46,10 @@ services:
       - postgres_data_staging:/var/lib/postgresql/data
     env_file:
       - ../../.env.staging
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     networks:
       - backend
       - monitoring
