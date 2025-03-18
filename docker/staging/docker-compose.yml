@@ -37,8 +37,9 @@ services:
       retries: 3
       start_period: 40s
     volumes:
-      - static_files:/app/staticfiles:rw
-      - media_files:/app/media:rw
+      - ../../static:/app/staticfiles:rw
+      - ../../media:/app/media:rw
+      - ../../logs:/app/logs:rw
 
   db:
     image: postgres:15-alpine
@@ -54,7 +55,7 @@ services:
       - backend
       - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5

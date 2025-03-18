@@ -11,6 +11,9 @@ services:
     volumes:
       - ../../:/app:cached
       - python-packages:/usr/local/lib/python3.11/site-packages/
+      - ../../static:/app/staticfiles:rw
+      - ../../media:/app/media:rw
+      - ../../logs:/app/logs:rw
     ports:
       - "8000:8000"
     env_file:
@@ -50,7 +53,7 @@ services:
       - backend
       - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,3 +117,15 @@ volumes:
     name: personal_redis_dev
   python-packages:
     driver: local
+  static_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PROJECT_STATIC_ROOT}
+  media_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PROJECT_MEDIA_ROOT}
