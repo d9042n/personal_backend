@@ -47,10 +47,13 @@ services:
       service: promtail
     env_file:
       - ../../../.env.production
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT}
     volumes:
       - ../common/promtail/config:/etc/promtail
       - /var/log:/var/log
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail-config.yml -config.expand-env=true
     restart: always
     networks:
       - monitoring
