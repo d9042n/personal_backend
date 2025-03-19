@@ -14,7 +14,7 @@ scrape_configs:
       - targets:
           - localhost
         labels:
-          job: varlogs
+          job: system
           __path__: /var/log/*log
 
   - job_name: docker
@@ -26,13 +26,13 @@ scrape_configs:
           __path__: /var/lib/docker/containers/*/*-json.log
 
   # Application logs - structured in date-based directories
-  - job_name: django_application
+  - job_name: backend
     static_configs:
       - targets:
           - localhost
         labels:
-          job: django
-          app: personal_backend
+          job: backend
+          app: backend
           env: ${ENVIRONMENT}
           __path__: /app/logs/*/*.log
     pipeline_stages:

@@ -53,6 +53,7 @@ services:
       - ../common/promtail/config:/etc/promtail
       - /var/log:/var/log
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ${APP_LOGS_PATH}:/app/logs:ro
     command: -config.file=/etc/promtail/promtail-config.yml -config.expand-env=true
     restart: always
     networks:
@@ -74,6 +75,8 @@ services:
     restart: always
     networks:
       - monitoring
+    ports:
+      - "9100:9100"
     logging:
       driver: "json-file"
       options:
@@ -96,6 +99,8 @@ services:
     networks:
       - monitoring
       - backend
+    ports:
+      - "9187:9187"
     logging:
       driver: "json-file"
       options:

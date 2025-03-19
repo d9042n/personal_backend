@@ -80,7 +80,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
+    CMD curl -f http://backend:8000/health/ || exit 1
 
 # Run gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", \

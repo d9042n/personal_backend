@@ -39,9 +39,9 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=personal_backend.settings
     volumes:
-      - ../../static:/app/staticfiles:rw
-      - ../../media:/app/media:rw
-      - ../../logs:/app/logs:rw
+      - static_files:/app/staticfiles:rw
+      - media_files:/app/media:rw
+      - log_files:/app/logs:rw
 
   db:
     image: postgres:15-alpine
@@ -131,3 +131,9 @@ volumes:
       type: none
       o: bind
       device: ${PROJECT_MEDIA_ROOT}
+  log_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${APP_LOGS_PATH}
