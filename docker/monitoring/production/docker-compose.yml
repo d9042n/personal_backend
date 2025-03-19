@@ -53,7 +53,7 @@ services:
       - ../common/promtail/config:/etc/promtail
       - /var/log:/var/log
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ${APP_LOGS_PATH}:/app/logs:ro
+      - logs_files:/app/logs:ro
     command: -config.file=/etc/promtail/promtail-config.yml -config.expand-env=true
     restart: always
     networks:
@@ -146,6 +146,12 @@ volumes:
   grafana_data:
     driver: local
     name: monitoring_grafana_production
+  logs_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${APP_LOGS_PATH}
 
 networks:
   monitoring:

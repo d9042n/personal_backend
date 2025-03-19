@@ -32,7 +32,7 @@ scrape_configs:
           - localhost
         labels:
           job: backend
-          app: backend
+          app: personal_backend
           env: ${ENVIRONMENT}
           __path__: /app/logs/*/*.log
     pipeline_stages:
