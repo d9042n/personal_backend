@@ -139,46 +139,46 @@ pg_stat_user_tables:
         description: "Table name"
     - seq_scan:
         usage: "COUNTER"
-        description: "Number of sequential scans"
+        description: "Number of sequential scans initiated on this table"
     - seq_tup_read:
         usage: "COUNTER"
-        description: "Number of tuples read in sequential scans"
+        description: "Number of live rows fetched by sequential scans"
     - idx_scan:
         usage: "COUNTER"
-        description: "Number of index scans"
+        description: "Number of index scans initiated on this table"
     - idx_tup_fetch:
         usage: "COUNTER"
-        description: "Number of tuples fetched by index scans"
+        description: "Number of live rows fetched by index scans"
     - n_tup_ins:
         usage: "COUNTER"
-        description: "Number of tuples inserted"
+        description: "Number of rows inserted"
     - n_tup_upd:
         usage: "COUNTER"
-        description: "Number of tuples updated"
+        description: "Number of rows updated"
     - n_tup_del:
         usage: "COUNTER"
-        description: "Number of tuples deleted"
+        description: "Number of rows deleted"
     - n_tup_hot_upd:
         usage: "COUNTER"
-        description: "Number of tuples hot updated"
+        description: "Number of rows HOT updated (i.e., with no separate index update required)"
     - n_live_tup:
         usage: "GAUGE"
-        description: "Estimated number of live tuples"
+        description: "Estimated number of live rows"
     - n_dead_tup:
         usage: "GAUGE"
-        description: "Estimated number of dead tuples"
+        description: "Estimated number of dead rows"
     - vacuum_count:
         usage: "COUNTER"
-        description: "Number of manual vacuums"
+        description: "Number of times this table has been manually vacuumed (not counting VACUUM FULL)"
     - autovacuum_count:
         usage: "COUNTER"
-        description: "Number of auto vacuums"
+        description: "Number of times this table has been vacuumed by the autovacuum daemon"
     - analyze_count:
         usage: "COUNTER"
-        description: "Number of manual analyzes"
+        description: "Number of times this table has been manually analyzed"
     - autoanalyze_count:
         usage: "COUNTER"
-        description: "Number of auto analyzes"
+        description: "Number of times this table has been analyzed by the autovacuum daemon"
 
 pg_statio_user_tables:
   query: |
