@@ -87,7 +87,30 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
         operation_summary="Create new user",
         request_body=UserSerializer,
         responses={
-            201: UserSerializer,
+            201: openapi.Response(
+                description="User created successfully",
+                examples={
+                    "application/json": {
+                        "refresh": "refresh_token",
+                        "access": "access_token",
+                        "user": {
+                            "id": 1,
+                            "username": "example_user",
+                            "email": "user@example.com",
+                            "first_name": "John",
+                            "last_name": "Doe",
+                            "profile": {
+                                "is_available": True,
+                                "badge": "Available",
+                                "name": "John Doe",
+                                "title": "Senior Developer",
+                                "description": "Full-stack developer",
+                                "social_links": {}
+                            }
+                        }
+                    }
+                }
+            ),
             400: "Invalid data"
         },
         tags=['Users']
@@ -99,7 +122,17 @@ class UserViewSet(viewsets.ViewSet, BaseAuthenticatedView):
             try:
                 user = serializer.save()
                 logger.info(f"User created successfully: {user.username}")
-                return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+                
+                # Generate tokens
+                refresh = RefreshToken.for_user(user)
+                access = str(refresh.access_token)
+                
+                # Return response with tokens and user data
+                return Response({
+                    'refresh': str(refresh),
+                    'access': access,
+                    'user': UserSerializer(user).data
+                }, status=status.HTTP_201_CREATED)
             except Exception as e:
                 logger.error(f"Error creating user: {str(e)}", exc_info=True)
                 return Response({"detail": "Error creating user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

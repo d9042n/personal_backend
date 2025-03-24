@@ -113,7 +113,6 @@ class Profile(models.Model):
     # Profile badge shown on user's profile
     badge = models.CharField(
         max_length=100, 
-        choices=UserConstants.Badges.CHOICES,
         default=UserConstants.Badges.AVAILABLE, 
         blank=True
     )
